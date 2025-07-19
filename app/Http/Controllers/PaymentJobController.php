@@ -5,14 +5,7 @@ use App\Models\PaymentJobs;
 use App\Services\Crypto;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
-use Carbon\Carbon;
-use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
-use phpseclib\Math\BigInteger;
-use Web3\Providers\HttpProvider;
-use Web3\RequestManagers\HttpRequestManager;
-use Web3\Web3;
-use Web3p\EthereumTx\Transaction;
 
 class PaymentJobController extends Controller
 {
@@ -25,37 +18,89 @@ class PaymentJobController extends Controller
         $this->nativeCoin = $nativeCoin;
     }
 
-    public function Jobs(){
-        $jobs = PaymentJobs::where('status', 'pending')->limit(5)->get();
-        if($jobs == null){return response()->json(['success' => false, 'message' => 'Jobs not found',]);}
-        foreach ($jobs as $job){
-            if ($job->created_at->lt(now()->subMinutes(20))) {
-                $job->status = 'expired';
-                $job->save();
-                Http::post($job->webhook_url, [
-                    'status' => 'expired',
-                    'data' => [
-                        'invoice_id' => $job->id,
-                    ],
-                ]);
+    public function Jobs()
+    {
+
+        $jobs = PaymentJobs::where('status', 'pending')
+            ->orderBy('created_at', 'asc')
+            ->limit(5)
+            ->get();
+
+        if ($jobs->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No pending jobs found.',
+            ]);
+        }
+
+        foreach ($jobs as $job) {
+            try {
+//                if ($job->created_at->lt(now()->subMinutes(20))) {
+//                    $this->expireJob($job);
+//                    continue;
+//                }
+
+                $walletAddress = $this->crypto->decrypt($job->wallet_address);
+                $walletKey     = $this->crypto->decrypt($job->key);
+
+                $balance = $job->type === 'native'
+                    ? $this->nativeCoin->getAnyNativeCoinBalance($walletAddress, $job->rpc_url)
+                    : $this->tokenManage->getTokenBalance($walletAddress, $job->contract_address, $job->rpc_url);
+
+                if (empty($balance['balance']) || $balance['balance'] == 0) {
+                    continue;
+                }
+
+                if ($job->type === 'native') {
+                    $res = $this->nativeCoin->sendAnyChainNativeBalance(
+                        $walletAddress,
+                        "0x86ed528e743b77a727badc5e24da4b41da9839e0",
+                        $walletKey,
+                        $job->rpc_url,
+                        $job->chain_id
+                    );
+
+                    if (!empty($res['success']) && !empty($res['tx_hash'])) {
+                        Http::post($job->webhook_url, [
+                            'status'     => true,
+                            'invoice_id' => $job->id,
+                            'tx_hash'    => $res["tx_hash"],
+                        ]);
+
+                        $job->status = 'completed';
+                        $job->save();
+                    } else {
+                        break;
+                    }
+                }elseif ($job->type === 'token' && !empty($job->contract_address)) {
+
+                }
+
+            } catch (\Throwable $e) {
                 continue;
             }
-
-            $balance = $job->type == 'native' ?
-                $this->nativeCoin->getAnyNativeCoinBalance($this->crypto->decrypt($job->wallet_address),"$job->rpc_url")
-                : $this->tokenManage->getTokenBalance($this->crypto->decrypt($job->wallet_address),"$job->contract_address","$job->rpc_url");
-            if($balance["balance"] == 0){continue;}
-            $data = $this->tokenManage->getEtherSupportTokenTransactions($this->crypto->decrypt($job->wallet_address), $job->id,'56','0x55d398326f99059fF775485246999027B3197955');
-            if($data != null){
-                Http::post($job->webhook_url,[
-                    'status' => true,
-                    'data' => $data,
-                ]);
-                $job->status = 'completed';
-                $job->save();
-            }
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Job processing completed.',
+        ]);
     }
+
+
+    protected function expireJob(PaymentJobs $job): void
+    {
+        $job->status = 'expired';
+        $job->save();
+
+        Http::post($job->webhook_url, [
+            'status' => 'expired',
+            'data' => [
+                'invoice_id' => $job->id,
+            ],
+        ]);
+    }
+
 
 
 
