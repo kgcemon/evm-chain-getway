@@ -53,7 +53,7 @@ class PaymentJobController extends Controller
                         $job->rpc_url,
                         $job->chain_id
                     );
-
+                    return $res;
                     if (!empty($res['success']) && !empty($res['tx_hash'])) {
                       $data =  Http::post($job->webhook_url, [
                             'status'     => true,
