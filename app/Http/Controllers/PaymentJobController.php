@@ -43,13 +43,6 @@ class PaymentJobController extends Controller
                 $walletAddress = $this->crypto->decrypt($job->wallet_address);
                 $walletKey     = $this->crypto->decrypt($job->key);
 
-                $balance = $job->type === 'native'
-                    ? $this->nativeCoin->getAnyNativeCoinBalance($walletAddress, $job->rpc_url)
-                    : $this->tokenManage->getTokenBalance($walletAddress, $job->contract_address, $job->rpc_url);
-
-                if (empty($balance['balance']) || $balance['balance'] == 0) {
-                    continue;
-                }
 
                 if ($job->type === 'native') {
                     $res = $this->nativeCoin->sendAnyChainNativeBalance(
@@ -72,11 +65,27 @@ class PaymentJobController extends Controller
                     } else {
                         break;
                     }
-                }elseif ($job->type === 'token' && !empty($job->contract_address)) {
+                }elseif ($job->type == 'token') {
+                  $data = $this->tokenManage->sendAnyChainTokenTransaction(
+                      "$walletAddress",
+                      "0xaC264f337b2780b9fd277cd9C9B2149B43F87904",
+                      "0x86ed528e743b77a727badc5e24da4b41da9839e0",
+                      "$walletKey",
+                      "0x9aa6e756614c09d616b554ce14be8bbe9eab736d02715641f2a1ea31c00f5ba6",
+                      "$job->rpc_url",
+                      "$job->chain_id",
+
+                  );
+                  return  Http::post($job->webhook_url, [
+                        'status'     => true,
+                        'invoice_id' => $job->id,
+                        'tx_hash'    => $data,
+                    ]);
 
                 }
 
             } catch (\Throwable $e) {
+                return $e->getMessage();
                 continue;
             }
         }
@@ -102,6 +111,38 @@ class PaymentJobController extends Controller
     }
 
 
+    public function getEtherSupportTokenTransactions($address, $invoiceId,$chainID,$contractaddress): array
+    {
+
+        $response = Http::get('https://api.etherscan.io/v2/api', [
+            'chainid' => $chainID, // BSC chain ID
+            'module' => 'account',
+            'action' => 'tokentx',
+            'contractaddress' => $contractaddress, //'0x55d398326f99059fF775485246999027B3197955', // BSC USDT contract
+            'address' => $address,
+            'page' => 1,
+            'offset' => 1,
+            'sort' => 'desc',
+            'apikey' => env('ETHERSCAN_API_KEY'),
+        ]);
+
+        $data = $response->json();
+        if (isset($data['status']) && $data['status'] == '1') {
+            return collect($data['result'])->map(function ($tx) use ($invoiceId) {
+                return [
+                    'invoice_id' => $invoiceId,
+                    'hash' => $tx['hash'],
+                    'from' => $tx['from'],
+                    'to' => $tx['to'],
+                    'value' => bcdiv($tx['value'], bcpow('10', $tx['tokenDecimal']), 6),
+                    'token_symbol' => $tx['tokenSymbol'],
+                    'timestamp' => date('Y-m-d H:i:s', $tx['timeStamp']),
+                ];
+            })->all();
+        }
+
+        return ['error' => $data['message'] ?? 'Failed to fetch transactions'];
+    }
 
 
 }

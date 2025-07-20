@@ -1,265 +1,322 @@
 <?php
 
 namespace App\Services;
+use Web3p\EthereumTx\Transaction;
 
-use Exception;
-use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Http;
-use phpseclib\Math\BigInteger;
+class TokenManage extends Crypto
+{
 
-class TokenManage extends Crypto{
-
-    public function getTokenBalance($address, $tokenAddress,$rpcUrl): string
+    public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $privateKey, $adminKey, $rpcUrl, $chainId)
     {
-        try {
-            $client = new Client();
-            $data = '0x70a08231' . str_pad(substr($address, 2), 64, '0', STR_PAD_LEFT);
-            $response = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'eth_call',
-                    'params' => [
-                        [
-                            'to' => $tokenAddress,
-                            'data' => $data
-                        ],
-                        'latest'
-                    ],
-                    'id' => 1
-                ]
-            ]);
-
-            $result = json_decode($response->getBody()->getContents(), true);
-
-            if (isset($result['result'])) {
-                $balanceHex = $result['result'];
-                $balance = new BigInteger(ltrim($balanceHex, '0x'), 16);
-                $decimals = 18;
-                $balanceString = $balance->toString();
-                return bcdiv($balanceString, bcpow('10', (string)$decimals), $decimals);
-            } else {
-                return '0';
-            }
-        } catch (\Exception $e) {
-            return  $e->getMessage();
+        // Validate addresses
+        if (!$this->isValidAddress($senderAddress) || !$this->isValidAddress($tokenAddress) || !$this->isValidAddress($toAddress)) {
+            throw new \Exception("Invalid Ethereum address provided");
         }
+
+        // Get the token balance
+        $balanceInWei = $this->getTokenBalance($rpcUrl, $senderAddress, $tokenAddress);
+
+        if ($balanceInWei == '0') {
+            throw new \Exception("No token balance to send");
+        }
+
+        // Construct the data field for token transfer
+        $data = '0xa9059cbb' .
+            str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
+            str_pad($this->bcdechex($balanceInWei), 64, '0', STR_PAD_LEFT);
+
+        // Set fixed gas limit and gas price
+        $gasLimit = 68000;
+        $gasPrice = 1000000000; // 1 Gwei
+
+        // Calculate gas fee in Wei (gasLimit * gasPrice)
+        $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
+
+        // Step 1: Send gas fee from admin to sender (user)
+        $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId);
+
+        // Step 2: Proceed with token transfer
+        $nonce = $this->getNonce($rpcUrl, $senderAddress);
+
+        $transaction = [
+            'nonce' => '0x' . dechex($nonce),
+            'from' => $senderAddress,
+            'to' => $tokenAddress,
+            'value' => '0x0',
+            'gas' => '0x' . dechex($gasLimit),
+            'gasPrice' => '0x' . dechex($gasPrice),
+            'data' => $data,
+            'chainId' => $chainId
+        ];
+
+        $tx = new Transaction($transaction);
+        $signedTx = $tx->sign($privateKey);
+        $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
+
+        return $txHash;
+    }
+
+    private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId)
+    {
+        if (!$this->isValidAddress($toAddress)) {
+            throw new \Exception("Invalid recipient address for gas fee transfer");
+        }
+
+        $adminAddress = '0xE96DC40FECe3effd2244098A36eed8AA8BCE0324';
+
+        $nonce = $this->getNonce($rpcUrl, $adminAddress);
+
+        // Use custom gas limit and gas price here as well
+        $gasLimit = 60000;
+        $gasPrice = 5000000000; // 5 Gwei
+
+        $currentBalance = $this->getNativeBalance($rpcUrl, $toAddress);
+
+        $totalNeeded = bcadd($estimatedGasFee, '0');
+
+        if (bccomp($currentBalance, $totalNeeded) >= 0) {
+            error_log("User already has enough gas, skipping top-up.");
+            return null;
+        }
+
+        $requiredTopUp = bcsub($totalNeeded, $currentBalance);
+
+        $transaction = [
+            'nonce' => '0x' . dechex($nonce),
+            'from' => $adminAddress,
+            'to' => $toAddress,
+            'value' => '0x' . dechex($requiredTopUp),
+            'gas' => '0x' . dechex($gasLimit),
+            'gasPrice' => '0x' . dechex($gasPrice),
+            'chainId' => $chainId
+        ];
+
+        $tx = new Transaction($transaction);
+        $signedTx = $tx->sign($adminKey);
+        $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
+
+        $this->waitForTransaction($rpcUrl, $txHash);
+
+        return $txHash;
     }
 
 
-    public function sendAnyChainFullTokenBalance(
-        $fromAddress,
-        $toAddress,
-        $encryptedPrivateKey,
-        $rpcUrl,
-        $chainId,
-        $tokenContractAddress
-    ) {
+    private function getNativeBalance($rpcUrl, $address)
+    {
+        $postData = [
+            'jsonrpc' => '2.0',
+            'method' => 'eth_getBalance',
+            'params' => [$address, 'latest'],
+            'id' => 1
+        ];
+        $response = $this->sendRpcRequest($rpcUrl, $postData);
+        return hexdec($this->removeHexPrefix($response['result']));
+    }
+
+    private function getTokenBalance($rpcUrl, $address, $tokenAddress)
+    {
+        $data = '0x70a08231' . str_pad(substr($this->removeHexPrefix($address), 0, 64), 64, '0', STR_PAD_LEFT);
+        $postData = [
+            'jsonrpc' => '2.0',
+            'method' => 'eth_call',
+            'params' => [
+                [
+                    'to' => $tokenAddress,
+                    'data' => $data
+                ],
+                'latest'
+            ],
+            'id' => 1
+        ];
+        $response = $this->sendRpcRequest($rpcUrl, $postData);
+
+        return hexdec($this->removeHexPrefix($response['result']));
+    }
+
+    private function getNonce($rpcUrl, $address)
+    {
+        $postData = [
+            'jsonrpc' => '2.0',
+            'method' => 'eth_getTransactionCount',
+            'params' => [$address, 'pending'],
+            'id' => 1
+        ];
+        $response = $this->sendRpcRequest($rpcUrl, $postData);
+        return hexdec($response['result']);
+    }
+
+    private function estimateGas($rpcUrl, $from, $to, $data)
+    {
+        $postData = [
+            'jsonrpc' => '2.0',
+            'method' => 'eth_estimateGas',
+            'params' => [[
+                'from' => $from,
+                'to' => $to,
+                'data' => $data
+            ]],
+            'id' => 1
+        ];
         try {
-            if (!extension_loaded('gmp')) {
-                throw new Exception('GMP extension is required for large number handling.');
-            }
+            $response = $this->sendRpcRequest($rpcUrl, $postData);
+            return hexdec($this->removeHexPrefix($response['result']));
+        } catch (\Exception $e) {
+            error_log("Failed to estimate gas for transaction from {$from} to {$to}: " . $e->getMessage());
+            throw new \Exception("Gas estimation failed: " . $e->getMessage());
+        }
+    }
 
-            $client = new Client();
+    private function getGasPrice($rpcUrl)
+    {
+        $postData = [
+            'jsonrpc' => '2.0',
+            'method' => 'eth_gasPrice',
+            'params' => [],
+            'id' => 1
+        ];
+        $response = $this->sendRpcRequest($rpcUrl, $postData);
+        return hexdec($response['result']);
+    }
 
-            $nonceRes = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'eth_getTransactionCount',
-                    'params' => [$fromAddress, 'pending'],
-                    'id' => 1
-                ]
-            ]);
-            $nonceResult = json_decode($nonceRes->getBody()->getContents(), true);
-            if (!isset($nonceResult['result']) || !preg_match('/^0x[0-9a-fA-F]+$/', $nonceResult['result'])) {
-                throw new Exception('Invalid nonce: ' . ($nonceResult['error']['message'] ?? 'Unknown error'));
-            }
-            $nonce = hexdec($nonceResult['result']);
+    private function sendRawTransaction($rpcUrl, $signedTx)
+    {
+        $postData = [
+            'jsonrpc' => '2.0',
+            'method' => 'eth_sendRawTransaction',
+            'params' => ['0x' . $signedTx],
+            'id' => 1
+        ];
+        $response = $this->sendRpcRequest($rpcUrl, $postData);
+        $txHash = $response['result'];
 
-            // Step 2: Get gas price
-            $gasPriceRes = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'eth_gasPrice',
-                    'params' => [],
-                    'id' => 2
-                ]
-            ]);
-            $gasPriceResult = json_decode($gasPriceRes->getBody()->getContents(), true);
-            if (!isset($gasPriceResult['result']) || !preg_match('/^0x[0-9a-fA-F]+$/', $gasPriceResult['result'])) {
-                throw new Exception('Invalid gas price: ' . ($gasPriceResult['error']['message'] ?? 'Unknown error'));
-            }
-            $gasPrice = hexdec($gasPriceResult['result']);
-            $gasLimit = 65000; // Typical gas limit for ERC-20 transfer
-            $gasCost = gmp_mul(gmp_init($gasPrice), gmp_init($gasLimit));
+        // Validate transaction hash format
+        if (!preg_match('/^0x[a-fA-F0-9]{64}$/', $txHash)) {
+            error_log("Invalid transaction hash returned: " . $txHash);
+            throw new \Exception("Invalid transaction hash returned: " . $txHash);
+        }
 
-            // Step 3: Get native token balance (e.g., BNB) to cover gas fees
-            $nativeBalanceRes = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'eth_getBalance',
-                    'params' => [$fromAddress, 'latest'],
-                    'id' => 3
-                ]
-            ]);
-            $nativeBalanceResult = json_decode($nativeBalanceRes->getBody()->getContents(), true);
-            if (!isset($nativeBalanceResult['result']) || !preg_match('/^0x[0-9a-fA-F]+$/', $nativeBalanceResult['result'])) {
-                throw new Exception('Invalid native balance response: ' . ($nativeBalanceResult['error']['message'] ?? 'Unknown error'));
-            }
-            $nativeBalanceWei = gmp_init($nativeBalanceResult['result'], 16);
+        return $txHash;
+    }
 
-            // Check if enough native token to cover gas fees
-            if (gmp_cmp($nativeBalanceWei, $gasCost) < 0) {
-                return [
-                    'success' => false,
-                    'message' => 'Insufficient native token (e.g., BNB) to cover gas fees.'
-                ];
-            }
+    private function waitForTransaction($rpcUrl, $txHash)
+    {
+        if (!preg_match('/^0x[a-fA-F0-9]{64}$/', $txHash)) {
+            error_log("Invalid transaction hash provided to waitForTransaction: " . $txHash);
+            throw new \Exception("Invalid transaction hash: " . $txHash);
+        }
 
-            // Step 4: Get token balance
-            $balanceOfData = '0x70a08231' . str_pad(substr($fromAddress, 2), 64, '0', STR_PAD_LEFT); // balanceOf(address)
-            $tokenBalanceRes = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'eth_call',
-                    'params' => [
-                        [
-                            'to' => $tokenContractAddress,
-                            'data' => $balanceOfData
-                        ],
-                        'latest'
-                    ],
-                    'id' => 4
-                ]
-            ]);
-            $tokenBalanceResult = json_decode($tokenBalanceRes->getBody()->getContents(), true);
-            if (!isset($tokenBalanceResult['result']) || !preg_match('/^0x[0-9a-fA-F]+$/', $tokenBalanceResult['result'])) {
-                throw new Exception('Invalid token balance response: ' . ($tokenBalanceResult['error']['message'] ?? 'Unknown error'));
-            }
-            $tokenBalance = gmp_init($tokenBalanceResult['result'], 16);
+        $maxAttempts = 60;
+        $attempt = 0;
+        $delay = 3;
 
-            // Log values for debugging
-            \Log::debug("TokenContract: $tokenContractAddress, TokenBalance: " . gmp_strval($tokenBalance) . ", NativeBalanceWei: " . gmp_strval($nativeBalanceWei) . ", GasCost: " . gmp_strval($gasCost));
-
-            // Check if token balance is zero
-            if (gmp_cmp($tokenBalance, 0) <= 0) {
-                return [
-                    'success' => false,
-                    'message' => 'Token balance is zero or negative.'
-                ];
-            }
-
-            $decimalsData = '0x313ce567'; // decimals()
-            $decimalsRes = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'eth_call',
-                    'params' => [
-                        [
-                            'to' => $tokenContractAddress,
-                            'data' => $decimalsData
-                        ],
-                        'latest'
-                    ],
-                    'id' => 5
-                ]
-            ]);
-            $decimalsResult = json_decode($decimalsRes->getBody()->getContents(), true);
-            $decimals = isset($decimalsResult['result']) ? hexdec($decimalsResult['result']) : 18; // Default to 18 if call fails
-
-            // Convert token balance to human-readable format
-            $tokenBalanceStr = gmp_strval($tokenBalance);
-            $tokenBalanceHuman = bcdiv($tokenBalanceStr, bcpow('10', (string)$decimals), $decimals);
-
-            // Step 6: Create transfer transaction
-            $transferData = '0xa9059cbb' . str_pad(substr($toAddress, 2), 64, '0', STR_PAD_LEFT) . str_pad(gmp_strval($tokenBalance, 16), 64, '0', STR_PAD_LEFT); // transfer(address,uint256)
-            $tx = new Transaction([
-                'nonce' => '0x' . dechex($nonce),
-                'gasPrice' => '0x' . dechex($gasPrice),
-                'gas' => '0x' . dechex($gasLimit),
-                'to' => $tokenContractAddress,
-                'value' => '0x0', // No native token sent
-                'data' => $transferData,
-                'chainId' => $chainId
-            ]);
-
-            $privateKey = $encryptedPrivateKey;
-
-            $signedTx = '0x' . $tx->sign($privateKey);
-
-            // Step 7: Send transaction
-            $sendRes = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'eth_sendRawTransaction',
-                    'params' => [$signedTx],
-                    'id' => 6
-                ]
-            ]);
-            $result = json_decode($sendRes->getBody()->getContents(), true);
-
-            // Log transaction details
-            \Log::debug("TokenBalance: $tokenBalanceStr, TokenBalanceHuman: $tokenBalanceHuman, SignedTx: $signedTx");
-
-            if (isset($result['result'])) {
-                return [
-                    'success' => true,
-                    'tx_hash' => $result['result'],
-                    'sent_amount' => $tokenBalanceHuman,
-                    'decimals' => $decimals
-                ];
-            }
-
-            return [
-                'success' => false,
-                'message' => $result['error']['message'] ?? 'Unknown error occurred'
+        while ($attempt < $maxAttempts) {
+            $postData = [
+                'jsonrpc' => '2.0',
+                'method' => 'eth_getTransactionReceipt',
+                'params' => [$txHash],
+                'id' => 1
             ];
 
-        } catch (\Exception $e) {
-            \Log::error("Error in sendAnyChainFullTokenBalance: " . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
+            try {
+                $response = $this->sendRpcRequest($rpcUrl, $postData);
+
+                // Proceed only if result is set
+                if (array_key_exists('result', $response)) {
+                    if ($response['result'] !== null) {
+                        $status = $response['result']['status'] ?? null;
+                        if ($status === '0x1') {
+                            error_log("Transaction confirmed successfully: $txHash");
+                            return true;
+                        } elseif ($status === '0x0') {
+                            error_log("Transaction failed with status 0x0: " . json_encode($response['result']));
+                            throw new \Exception("Transaction failed: $txHash");
+                        }
+                    }
+                    // If result is null, transaction not yet mined
+                    error_log("Transaction $txHash pending (null result), attempt " . ($attempt + 1) . " of $maxAttempts");
+                } else {
+                    // No result key present
+                    error_log("Transaction $txHash RPC response missing 'result', attempt " . ($attempt + 1) . " of $maxAttempts: " . json_encode($response));
+                }
+
+            } catch (\Exception $e) {
+                error_log("Error checking transaction receipt for $txHash: " . $e->getMessage());
+                // Don't throw immediately, wait and retry
+            }
+
+            sleep($delay);
+            $attempt++;
         }
+
+        error_log("Transaction $txHash timed out after $maxAttempts attempts");
+        throw new \Exception("Transaction timed out: $txHash");
     }
 
 
-
-
-
-    public function getEtherSupportTokenTransactions($address, $invoiceId,$chainID,$contractaddress): array
+    private function sendRpcRequest($rpcUrl, $postData)
     {
+        $ch = curl_init($rpcUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
 
-        $response = Http::get('https://api.etherscan.io/v2/api', [
-            'chainid' => $chainID, // BSC chain ID
-            'module' => 'account',
-            'action' => 'tokentx',
-            'contractaddress' => $contractaddress, //'0x55d398326f99059fF775485246999027B3197955', // BSC USDT contract
-            'address' => $address,
-            'page' => 1,
-            'offset' => 1,
-            'sort' => 'desc',
-            'apikey' => env('ETHERSCAN_API_KEY'),
-        ]);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
 
-        $data = $response->json();
-        if (isset($data['status']) && $data['status'] == '1') {
-            return collect($data['result'])->map(function ($tx) use ($invoiceId) {
-                return [
-                    'invoice_id' => $invoiceId,
-                    'hash' => $tx['hash'],
-                    'from' => $tx['from'],
-                    'to' => $tx['to'],
-                    'value' => bcdiv($tx['value'], bcpow('10', $tx['tokenDecimal']), 6),
-                    'token_symbol' => $tx['tokenSymbol'],
-                    'timestamp' => date('Y-m-d H:i:s', $tx['timeStamp']),
-                ];
-            })->all();
+        if ($response === false) {
+            error_log("RPC request failed for method {$postData['method']}: $curlError");
+            throw new \Exception("RPC request failed: $curlError");
         }
 
-        return ['error' => $data['message'] ?? 'Failed to fetch transactions'];
+        if ($httpCode >= 400) {
+            error_log("RPC request returned HTTP error {$httpCode} for method {$postData['method']}: $response");
+            throw new \Exception("RPC request returned HTTP error: $httpCode");
+        }
+
+        $decodedResponse = json_decode($response, true);
+        if ($decodedResponse === null) {
+            error_log("Invalid JSON response for method {$postData['method']}: $response");
+            throw new \Exception("Invalid JSON response from RPC");
+        }
+
+        error_log("RPC response for method {$postData['method']}: " . json_encode($decodedResponse));
+
+        if (isset($decodedResponse['error'])) {
+            error_log("RPC error for method {$postData['method']}: " . json_encode($decodedResponse['error']));
+            throw new \Exception("RPC error: " . $decodedResponse['error']['message'] . " (code: " . $decodedResponse['error']['code'] . ")");
+        }
+
+        if (!isset($decodedResponse['result'])) {
+            error_log("RPC response missing 'result' for method {$postData['method']}: " . json_encode($decodedResponse));
+            throw new \Exception("RPC response does not contain 'result' key for method {$postData['method']}");
+        }
+
+        return $decodedResponse;
     }
 
+    private function bcdechex($dec)
+    {
+        $hex = '';
+        do {
+            $last = bcmod($dec, 16);
+            $hex = dechex($last) . $hex;
+            $dec = bcdiv(bcsub($dec, $last), 16);
+        } while ($dec > 0);
+        return $hex;
+    }
 
+    private function removeHexPrefix($hex)
+    {
+        return str_starts_with($hex, '0x') ? substr($hex, 2) : $hex;
+    }
+
+    private function isValidAddress($address)
+    {
+        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address) === 1;
+    }
 }
-
