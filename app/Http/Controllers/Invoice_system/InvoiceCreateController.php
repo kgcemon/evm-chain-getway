@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Invoice_system;
 
+use App\Http\Controllers\Controller;
 use App\Models\PaymentJobs;
 use App\Services\CreateWallet;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class InvoiceCreateController extends Controller
             'chain_id'         => 'required|integer',
             'type'             => 'required|string',
             'contract_address' => 'nullable|string',
+            'user_id'          => 'required|integer|exists:users,id',
         ]);
 
         $rpcUrl = $this->findChainRpc($validated['chain_id']);
@@ -47,18 +49,20 @@ class InvoiceCreateController extends Controller
             'wallet_address'   => $wallet['address'],
             'key'              => $wallet['key'],
             'webhook_url'      => $validated['webhook_url'],
-            'token_name'       => $validated['token_name'] ?? null,
+            'token_name'       => strtoupper($validated['token_name']) ?? null,
             'chain_id'         => $validated['chain_id'],
             'rpc_url'          => $rpcUrl,
             'type'             => $validated['type'],
             'contract_address' => $validated['contract_address'] ?? null,
+            'invoice_id'       => PaymentJobs::generateUIDCode(),
+            'user_id'          => $validated['user_id'],
         ]);
 
         return response()->json([
             'status'  => true,
             'message' => 'Invoice has been created.',
             'data'    => [
-                'invoice_id' => $job->id,
+                'invoice_id' => $job->invoice_id,
                 'address'    => $this->createWallet->decrypt($wallet['address']),
             ],
         ], 201);

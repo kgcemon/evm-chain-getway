@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('payment_jobs', function (Blueprint $table) {
             $table->id();
+            $table->unsignedInteger('user_id');
+            $table->string('invoice_id')->unique();
             $table->string('token_name')->default('native');
             $table->string('chain_id');
             $table->string('wallet_address');
@@ -21,6 +23,7 @@ return new class extends Migration
             $table->string('rpc_url');
             $table->enum('type',['native','token']);
             $table->string('contract_address')->nullable();
+            $table->string('tx_hash')->nullable();
             $table->enum('status', ['pending', 'processing', 'completed','expired'])->default('pending');
             $table->timestamps();
         });

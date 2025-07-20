@@ -1,6 +1,7 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Invoice_system;
+use App\Http\Controllers\Controller;
 use App\Models\PaymentJobs;
 use App\Services\Crypto;
 use App\Services\NativeCoin;
@@ -35,10 +36,10 @@ class PaymentJobController extends Controller
 
         foreach ($jobs as $job) {
             try {
-//                if ($job->created_at->lt(now()->subMinutes(20))) {
-//                    $this->expireJob($job);
-//                    continue;
-//                }
+                if ($job->created_at->lt(now()->subMinutes(20))) {
+                    $this->expireJob($job);
+                    continue;
+                }
 
                 $walletAddress = $this->crypto->decrypt($job->wallet_address);
                 $walletKey     = $this->crypto->decrypt($job->key);
@@ -61,6 +62,7 @@ class PaymentJobController extends Controller
                         ]);
 
                         $job->status = 'completed';
+                        $job->tx_hash = $res["tx_hash"];
                         $job->save();
                     } else {
                         break;
@@ -101,47 +103,13 @@ class PaymentJobController extends Controller
     {
         $job->status = 'expired';
         $job->save();
-
         Http::post($job->webhook_url, [
             'status' => 'expired',
             'data' => [
-                'invoice_id' => $job->id,
-            ],
+                'invoice_id' => $job->invoice_id,
+                'message'   => 'time has been expired.',
+                ],
         ]);
-    }
-
-
-    public function getEtherSupportTokenTransactions($address, $invoiceId,$chainID,$contractaddress): array
-    {
-
-        $response = Http::get('https://api.etherscan.io/v2/api', [
-            'chainid' => $chainID, // BSC chain ID
-            'module' => 'account',
-            'action' => 'tokentx',
-            'contractaddress' => $contractaddress, //'0x55d398326f99059fF775485246999027B3197955', // BSC USDT contract
-            'address' => $address,
-            'page' => 1,
-            'offset' => 1,
-            'sort' => 'desc',
-            'apikey' => env('ETHERSCAN_API_KEY'),
-        ]);
-
-        $data = $response->json();
-        if (isset($data['status']) && $data['status'] == '1') {
-            return collect($data['result'])->map(function ($tx) use ($invoiceId) {
-                return [
-                    'invoice_id' => $invoiceId,
-                    'hash' => $tx['hash'],
-                    'from' => $tx['from'],
-                    'to' => $tx['to'],
-                    'value' => bcdiv($tx['value'], bcpow('10', $tx['tokenDecimal']), 6),
-                    'token_symbol' => $tx['tokenSymbol'],
-                    'timestamp' => date('Y-m-d H:i:s', $tx['timeStamp']),
-                ];
-            })->all();
-        }
-
-        return ['error' => $data['message'] ?? 'Failed to fetch transactions'];
     }
 
 

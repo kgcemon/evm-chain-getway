@@ -20,5 +20,16 @@ class PaymentJobs extends Model
         'rpc_url',
         'type',
         'contract_address',
+        'invoice_id',
+        'user_id'
     ];
+
+    public static function generateUIDCode(): string
+    {
+        do {
+            $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 10));
+        } while (self::where('invoice_id', $code)->exists());
+
+        return $code;
+    }
 }

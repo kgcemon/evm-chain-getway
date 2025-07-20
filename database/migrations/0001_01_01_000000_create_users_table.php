@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -15,6 +16,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('wallet_address');
+            $table->longText('two_factor_secret');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
@@ -35,6 +38,14 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+
+       DB::table('users')->insert([
+           'name' => 'John Doe',
+           'email' => 'admin@admin.com',
+           'wallet_address' => '0x0c89aeb492edf77f3d14fc06a799cdcd1c1ad29d',
+           'two_factor_secret' => 'dsdwedqwerwrdw',
+            'password' => 'rfewrewrfwef'
+        ]);
     }
 
     /**

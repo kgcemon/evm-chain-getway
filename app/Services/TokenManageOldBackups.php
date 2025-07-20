@@ -3,68 +3,41 @@
 namespace App\Services;
 use Web3p\EthereumTx\Transaction;
 
-class TokenManage extends Crypto
+class TokenManageOldBackups extends Crypto
 {
 
-    public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $adminKey, $rpcUrl, $chainId, $amount = null, $isFullOut = false)
+    public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $privateKey, $adminKey, $rpcUrl, $chainId)
     {
         // Validate addresses
         if (!$this->isValidAddress($senderAddress) || !$this->isValidAddress($tokenAddress) || !$this->isValidAddress($toAddress)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid address'
-            ]);
+            throw new \Exception("Invalid Ethereum address provided");
         }
 
-        // Get token balance
-        $balanceInWei = (string) $this->getTokenBalance($rpcUrl, $senderAddress, $tokenAddress);
+        // Get the token balance
+        $balanceInWei = $this->getTokenBalance($rpcUrl, $senderAddress, $tokenAddress);
 
-        $balanceInWei = $this->toPlainString($balanceInWei);
-
-        if (!is_numeric($balanceInWei) || $balanceInWei === '0') {
-            return response()->json([
-                'status' => false,
-                'message' => 'Token balance is invalid or zero'
-            ]);
+        if ($balanceInWei == '0') {
+            throw new \Exception("No token balance to send");
         }
 
-        // Determine amount to send
-        $decimals = 18;
-        if ($isFullOut && $amount === null) {
-            $amountInWei = $balanceInWei;
-        } else {
-            if (!is_numeric($amount)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Amount must be a valid number'
-                ]);
-            }
-
-            $amountInWei = bcmul((string)$amount, bcpow('10', (string)$decimals), 0);
-            $amountInWei = $this->toPlainString($amountInWei);
-
-            if (!is_numeric($amountInWei) || bccomp($balanceInWei, $amountInWei) < 0) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Insufficient token balance to send the specified amount'
-                ]);
-            }
-        }
-
-        // Prepare data for token transfer
+        // Construct the data field for token transfer
         $data = '0xa9059cbb' .
             str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
-            str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
+            str_pad($this->bcdechex($balanceInWei), 64, '0', STR_PAD_LEFT);
 
+        // Set fixed gas limit and gas price
         $gasLimit = 68000;
-        $gasPrice = 1000000000;
+        $gasPrice = 1000000000; // 1 Gwei
+
+        // Calculate gas fee in Wei (gasLimit * gasPrice)
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
 
-        // Send gas to sender
-        $this->sendGasFee("$rpcUrl", "$senderAddress", "$gasFeeInWei", "$adminKey", "$chainId", $senderAddress);
+        // Step 1: Send gas fee from admin to sender (user)
+        $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId);
 
-        // Prepare transaction
+        // Step 2: Proceed with token transfer
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
+
         $transaction = [
             'nonce' => '0x' . dechex($nonce),
             'from' => $senderAddress,
@@ -76,43 +49,37 @@ class TokenManage extends Crypto
             'chainId' => $chainId
         ];
 
-        // Sign and send
         $tx = new Transaction($transaction);
-        $signedTx = $tx->sign($adminKey);
+        $signedTx = $tx->sign($privateKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        return response()->json([
-            'status' => true,
-            'tx_hash' => $txHash
-        ]);
+        return $txHash;
     }
 
-    private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $senderAddress)
+    private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId)
     {
         if (!$this->isValidAddress($toAddress)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid address'
-            ]);
+            throw new \Exception("Invalid recipient address for gas fee transfer");
         }
 
-        $adminAddress = $senderAddress;
+        $adminAddress = '0xE96DC40FECe3effd2244098A36eed8AA8BCE0324';
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
 
+        // Use custom gas limit and gas price here as well
         $gasLimit = 60000;
-        $gasPrice = 5000000000;
+        $gasPrice = 5000000000; // 5 Gwei
 
-        // Convert balances and fees to plain strings
-        $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
-        $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
+        $currentBalance = $this->getNativeBalance($rpcUrl, $toAddress);
+
+        $totalNeeded = bcadd($estimatedGasFee, '0');
 
         if (bccomp($currentBalance, $totalNeeded) >= 0) {
             error_log("User already has enough gas, skipping top-up.");
             return null;
         }
 
-        $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
+        $requiredTopUp = bcsub($totalNeeded, $currentBalance);
 
         $transaction = [
             'nonce' => '0x' . dechex($nonce),
@@ -133,7 +100,8 @@ class TokenManage extends Crypto
         return $txHash;
     }
 
-    private function getNativeBalance($rpcUrl, $address): float|int
+
+    private function getNativeBalance($rpcUrl, $address)
     {
         $postData = [
             'jsonrpc' => '2.0',
@@ -164,18 +132,6 @@ class TokenManage extends Crypto
 
         return hexdec($this->removeHexPrefix($response['result']));
     }
-
-    private function toPlainString($number)
-    {
-        if (!is_numeric($number)) return '0';
-
-        if (stripos($number, 'e') !== false) {
-            return number_format($number, 0, '', '');
-        }
-
-        return (string) $number;
-    }
-
 
     private function getNonce($rpcUrl, $address)
     {
