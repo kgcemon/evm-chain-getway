@@ -55,15 +55,15 @@ class PaymentJobController extends Controller
                     );
 
                     if (!empty($res['success']) && !empty($res['tx_hash'])) {
-                        Http::post($job->webhook_url, [
+                      $data =  Http::post($job->webhook_url, [
                             'status'     => true,
                             'invoice_id' => $job->id,
                             'tx_hash'    => $res["tx_hash"],
                         ]);
-
                         $job->status = 'completed';
                         $job->tx_hash = $res["tx_hash"];
                         $job->save();
+                        return $data;
                     } else {
                         break;
                     }
