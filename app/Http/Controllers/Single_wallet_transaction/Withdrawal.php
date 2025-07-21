@@ -25,6 +25,7 @@ class Withdrawal extends Controller
             'token_address' => 'required',
             'chain_id' => 'required',
             'rpc_url' => 'required',
+            'user_key' => 'required',
         ]);
 
         if($validatedData['type'] == 'token'){
@@ -32,10 +33,12 @@ class Withdrawal extends Controller
                 $validatedData['from'],
                 $validatedData['token_address'],
                 $validatedData['to'],
-                $request->header('key'),
+                $request->input('user_key'),
                 $validatedData['rpc_url'],
                 $validatedData['chain_id'],
-                $validatedData["amount"],
+                "",
+                "",
+              $validatedData["amount"]
             );
         }
 
