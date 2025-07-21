@@ -6,7 +6,7 @@ use Web3p\EthereumTx\Transaction;
 class TokenManage extends Crypto
 {
 
-    public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $adminKey, $rpcUrl, $chainId, $amount = null, $isFullOut = false)
+    public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $userKey, $rpcUrl, $chainId, $adminAddress, $adminKey, $amount = null, $isFullOut = false)
     {
         // Validate addresses
         if (!$this->isValidAddress($senderAddress) || !$this->isValidAddress($tokenAddress) || !$this->isValidAddress($toAddress)) {
@@ -61,8 +61,8 @@ class TokenManage extends Crypto
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
 
         // Send gas to sender
-        $this->sendGasFee("$rpcUrl", "$senderAddress", "$gasFeeInWei", "$adminKey", "$chainId", $senderAddress);
-
+        $this->sendGasFee("$rpcUrl", "$senderAddress", "$gasFeeInWei", "$adminKey", "$chainId", $adminAddress);
+        sleep(1);
         // Prepare transaction
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
         $transaction = [
@@ -78,16 +78,17 @@ class TokenManage extends Crypto
 
         // Sign and send
         $tx = new Transaction($transaction);
-        $signedTx = $tx->sign($adminKey);
+        $signedTx = $tx->sign($userKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
         return response()->json([
             'status' => true,
-            'tx_hash' => $txHash
+            'nonce' => $nonce,
+            'txHash' => $txHash,
+           'amount' => bcdiv($amountInWei, bcpow('10', '18'), 18)
         ]);
     }
-
-    private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $senderAddress)
+    private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
             return response()->json([
@@ -96,14 +97,11 @@ class TokenManage extends Crypto
             ]);
         }
 
-        $adminAddress = $senderAddress;
-
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
 
         $gasLimit = 60000;
         $gasPrice = 5000000000;
 
-        // Convert balances and fees to plain strings
         $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
         $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
 

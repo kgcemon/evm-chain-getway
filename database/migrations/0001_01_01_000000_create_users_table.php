@@ -42,7 +42,7 @@ return new class extends Migration
        DB::table('users')->insert([
            'name' => 'John Doe',
            'email' => 'admin@admin.com',
-           'wallet_address' => '0x0c89aeb492edf77f3d14fc06a799cdcd1c1ad29d',
+           'wallet_address' => '0x86ed528e743b77a727badc5e24da4b41da9839e0',
            'two_factor_secret' => 'dsdwedqwerwrdw',
             'password' => 'rfewrewrfwef'
         ]);

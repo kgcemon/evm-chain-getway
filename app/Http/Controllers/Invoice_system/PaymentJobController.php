@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Invoice_system;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentJobs;
+use App\Models\User;
 use App\Services\Crypto;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
@@ -43,21 +44,21 @@ class PaymentJobController extends Controller
 
                 $walletAddress = $this->crypto->decrypt($job->wallet_address);
                 $walletKey     = $this->crypto->decrypt($job->key);
-
+                $user = User::where('id', $job->user_id)->first();
 
                 if ($job->type === 'native') {
                     $res = $this->nativeCoin->sendAnyChainNativeBalance(
                         $walletAddress,
-                        "0x86ed528e743b77a727badc5e24da4b41da9839e0",
+                        $user->wallet_address,
                         $walletKey,
                         $job->rpc_url,
                         $job->chain_id
                     );
-                    return $res;
                     if (!empty($res['success']) && !empty($res['tx_hash'])) {
                       $data =  Http::post($job->webhook_url, [
                             'status'     => true,
-                            'invoice_id' => $job->id,
+                            'invoice_id' => $job->invoice_id,
+                            'amount' => $res['sent_amount'],
                             'tx_hash'    => $res["tx_hash"],
                         ]);
                         $job->status = 'completed';
@@ -70,19 +71,26 @@ class PaymentJobController extends Controller
                 }elseif ($job->type == 'token') {
                   $data = $this->tokenManage->sendAnyChainTokenTransaction(
                       "$walletAddress",
-                      "0xaC264f337b2780b9fd277cd9C9B2149B43F87904",
+                      $job->contract_address,
                       "0x86ed528e743b77a727badc5e24da4b41da9839e0",
                       "$walletKey",
-                      "0x9aa6e756614c09d616b554ce14be8bbe9eab736d02715641f2a1ea31c00f5ba6",
                       "$job->rpc_url",
                       "$job->chain_id",
-
+                      "$user->wallet_address",
+                      "$user->two_factor_secret",
+                      null,
+                      true
                   );
-                  return  Http::post($job->webhook_url, [
-                        'status'     => true,
-                        'invoice_id' => $job->id,
-                        'tx_hash'    => $data,
-                    ]);
+
+                  $mainData = $data->getData();
+                  if ($mainData->status === true) {
+                      $job->status = 'completed';
+                      $job->tx_hash = $mainData->txHash;
+                      $job->save();
+                      return  Http::post($job->webhook_url,$data->getData());
+                  }else{
+                      continue;
+                  }
 
                 }
 
