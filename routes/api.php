@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\api\Auth\UserAuthController;
 use App\Http\Controllers\api\Invoice\InvoiceCreateController;
 use App\Http\Controllers\api\Invoice\PaymentJobController;
 use App\Http\Controllers\api\Single\Deposit;
@@ -15,4 +16,5 @@ Route::post('/create_invoice',[InvoiceCreateController::class,'createInvoice']);
 Route::get('/last-transactions', [PaymentJobController::class, 'Jobs']);
 Route::post('/payout', [Withdrawal::class, 'payout']);
 Route::post('/deposit', [Deposit::class, 'deposit']);
+Route::post('create-account', [UserAuthController::class, 'createAccount']);
 
