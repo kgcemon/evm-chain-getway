@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('transaction', function (Blueprint $table) {
+        Schema::create('chain_list', function (Blueprint $table) {
             $table->id();
+            $table->string('chain_name');
+            $table->string('chain_id');
+            $table->string('chain_rpc_url')->nullable();
+            $table->boolean('status')->default(true);
             $table->timestamps();
         });
     }
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('transaction');
+        Schema::dropIfExists('chain_list');
     }
 };

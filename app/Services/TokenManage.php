@@ -84,6 +84,7 @@ class TokenManage extends Crypto
             'status' => true,
             'nonce' => $nonce,
             'txHash' => $txHash,
+           'contract_address' => $tokenAddress,
            'amount' => bcdiv($amountInWei, bcpow('10', '18'), 18)
         ]);
     }

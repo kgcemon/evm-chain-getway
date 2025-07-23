@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\Deposit;
-use App\Http\Controllers\InvoiceSystem\InvoiceCreateController;
-use App\Http\Controllers\InvoiceSystem\PaymentJobController;
-use App\Http\Controllers\SingleWalletSystem\Withdrawal;
+use App\Http\Controllers\api\Invoice\InvoiceCreateController;
+use App\Http\Controllers\api\Invoice\PaymentJobController;
+use App\Http\Controllers\api\Single\Deposit;
+use App\Http\Controllers\api\Single\Withdrawal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 

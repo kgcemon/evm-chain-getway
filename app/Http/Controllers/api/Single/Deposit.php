@@ -1,7 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\api\Single;
 
+use App\Http\Controllers\Controller;
+use App\Models\ChainList;
+use App\Models\Transactions;
 use App\Models\User;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
@@ -27,14 +30,20 @@ class Deposit extends Controller
             'to' => 'required|min:20|max:90',
             'token_address' => 'sometimes|string',
             'type' => 'required',
-            'wallet' => 'sometimes|string',
             'user_id' => 'required',
-            'rpc_url' => 'required|string|url',
             'chain_id' => 'required|integer',
         ]);
 
 
         $user = User::find($validatedData['user_id']);
+        $chainData = ChainList::where('chain_id', $validatedData['chain_id'])->first();
+
+        if (!$chainData){
+            return response()->json([
+                'status'    => false,
+                'message' => 'Block master.info not supported this chain please contact your server administrator.',
+            ]);
+        }
 
         if (!$user) {
             return response()->json(['message'=>"Unauthenticated."], 401);
@@ -45,8 +54,8 @@ class Deposit extends Controller
         $adminKey = $this->tokenManage->decrypt($user->two_factor_secret);
         $tokenContractAddress = $validatedData['token_address'] ?? null;
         $to = $validatedData['to'];
-        $rpcUrl = $validatedData['rpc_url'];
-        $chainId = $validatedData['chain_id'];
+        $rpcUrl = $chainData->chain_rpc_url;
+        $chainId = $chainData->chain_id;
 
         if ($validatedData['type'] === 'native') {
             $res = $this->nativeCoin->sendAnyChainNativeBalance(
@@ -79,6 +88,17 @@ class Deposit extends Controller
             );
             $mainData = $data->getData();
             if ($mainData->status === true) {
+                try{
+                    Transactions::create([
+                        'user_id' => $user->id,
+                        'chain_id' => $chainData->id,
+                        'amount' => $mainData->amount,
+                        'trx_hash' => $mainData->txHash,
+                        'type' => $validatedData['type'],
+                        'token_name' => $tokenContractAddress,
+                        'status' => $mainData->status,
+                    ]);
+                }catch (\Exception $exception){}
                 return  $mainData;
             }else{
                 return response()->json([

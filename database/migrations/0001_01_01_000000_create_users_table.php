@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -42,9 +43,9 @@ return new class extends Migration
        DB::table('users')->insert([
            'name' => 'John Doe',
            'email' => 'admin@admin.com',
-           'wallet_address' => '0x86ed528e743b77a727badc5e24da4b41da9839e0',
-           'two_factor_secret' => 'dsdwedqwerwrdw',
-            'password' => 'rfewrewrfwef'
+           'wallet_address' => '0xeaf73757f38ae66c7842f908e97d0ec9c40a019c',
+           'two_factor_secret' => 'eu2ImvsQq2kSatms3+s5x1y9FhD1L0jFAcVz37sCycnfgJQ25bU067/z+03gJC+wFpsiLWUl2EQlt/nzdP3zjmIuDSzU2bP7czhXgN/BS7VetR/29W+ENRBun5oX0Iwa',
+           'password' => Hash::make('112233'),
         ]);
     }
 
