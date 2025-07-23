@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+use App\Exceptions\RpcException;
 use Web3p\EthereumTx\Transaction;
 
 class TokenManage extends Crypto
@@ -8,7 +9,6 @@ class TokenManage extends Crypto
 
     public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $userKey, $rpcUrl, $chainId, $adminAddress, $adminKey, $amount = null, $isFullOut = false)
     {
-        // Validate addresses
         if (!$this->isValidAddress($senderAddress) || !$this->isValidAddress($tokenAddress) || !$this->isValidAddress($toAddress)) {
             return response()->json([
                 'status' => false,
@@ -18,7 +18,6 @@ class TokenManage extends Crypto
 
         // Get token balance
         $balanceInWei = (string) $this->getTokenBalance($rpcUrl, $senderAddress, $tokenAddress);
-
         $balanceInWei = $this->toPlainString($balanceInWei);
 
         if (!is_numeric($balanceInWei) || $balanceInWei === '0') {
@@ -73,7 +72,7 @@ class TokenManage extends Crypto
             'gas' => '0x' . dechex($gasLimit),
             'gasPrice' => '0x' . dechex($gasPrice),
             'data' => $data,
-            'chainId' => $chainId
+            'chainId' => $chainId,
         ];
 
         // Sign and send
@@ -106,7 +105,6 @@ class TokenManage extends Crypto
         $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
 
         if (bccomp($currentBalance, $totalNeeded) >= 0) {
-            error_log("User already has enough gas, skipping top-up.");
             return null;
         }
 
@@ -156,7 +154,7 @@ class TokenManage extends Crypto
                 ],
                 'latest'
             ],
-            'id' => 1
+            'id' => 1,
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
 
@@ -187,38 +185,6 @@ class TokenManage extends Crypto
         return hexdec($response['result']);
     }
 
-    private function estimateGas($rpcUrl, $from, $to, $data)
-    {
-        $postData = [
-            'jsonrpc' => '2.0',
-            'method' => 'eth_estimateGas',
-            'params' => [[
-                'from' => $from,
-                'to' => $to,
-                'data' => $data
-            ]],
-            'id' => 1
-        ];
-        try {
-            $response = $this->sendRpcRequest($rpcUrl, $postData);
-            return hexdec($this->removeHexPrefix($response['result']));
-        } catch (\Exception $e) {
-            error_log("Failed to estimate gas for transaction from {$from} to {$to}: " . $e->getMessage());
-            throw new \Exception("Gas estimation failed: " . $e->getMessage());
-        }
-    }
-
-    private function getGasPrice($rpcUrl)
-    {
-        $postData = [
-            'jsonrpc' => '2.0',
-            'method' => 'eth_gasPrice',
-            'params' => [],
-            'id' => 1
-        ];
-        $response = $this->sendRpcRequest($rpcUrl, $postData);
-        return hexdec($response['result']);
-    }
 
     private function sendRawTransaction($rpcUrl, $signedTx)
     {
@@ -330,7 +296,10 @@ class TokenManage extends Crypto
 
         if (isset($decodedResponse['error'])) {
             error_log("RPC error for method {$postData['method']}: " . json_encode($decodedResponse['error']));
-            throw new \Exception("RPC error: " . $decodedResponse['error']['message'] . " (code: " . $decodedResponse['error']['code'] . ")");
+            if (isset($decodedResponse['error'])) {
+                throw new RpcException("" . $decodedResponse['error']['message'], $decodedResponse['error']);
+            }
+
         }
 
         if (!isset($decodedResponse['result'])) {

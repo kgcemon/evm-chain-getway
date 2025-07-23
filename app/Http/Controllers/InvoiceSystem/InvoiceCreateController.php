@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Invoice_system;
+namespace App\Http\Controllers\InvoiceSystem;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentJobs;

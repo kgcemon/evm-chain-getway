@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Invoice_system;
+namespace App\Http\Controllers\InvoiceSystem;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentJobs;
 use App\Models\User;
@@ -95,7 +95,6 @@ class PaymentJobController extends Controller
                 }
 
             } catch (\Throwable $e) {
-                return $e->getMessage();
                 continue;
             }
         }
