@@ -55,13 +55,23 @@ class TokenManage extends Crypto
             str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
             str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
 
-        $gasLimit = 68000;
-        $gasPrice = 1000000000;
+        $gasLimit = 100000;
+        $gasPrice = 1000000000; // 1 Gwei
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
 
-        // Send gas to sender
-        $this->sendGasFee("$rpcUrl", "$senderAddress", "$gasFeeInWei", "$adminKey", "$chainId", $adminAddress);
-        sleep(1);
+        // Send gas fee to sender address from admin
+        $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
+
+        // Wait for gas to arrive
+        sleep(3); // Optional: increase if necessary
+        $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress);
+        if (bccomp($nativeBalance, $gasFeeInWei) < 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Gas fee not received by sender address'
+            ]);
+        }
+
         // Prepare transaction
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
         $transaction = [
@@ -80,14 +90,29 @@ class TokenManage extends Crypto
         $signedTx = $tx->sign($userKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
+        // Confirm transaction success via receipt
+        for ($i = 0; $i < 10; $i++) {
+            $receipt = $this->getTransactionReceipt($rpcUrl, $txHash);
+            if ($receipt && isset($receipt['status']) && hexdec($receipt['status']) === 1) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Transaction successful',
+                    'txHash' => $txHash,
+                    'nonce' => $nonce,
+                    'contract_address' => $tokenAddress,
+                    'amount' => bcdiv($amountInWei, bcpow('10', '18'), 18)
+                ]);
+            }
+            sleep(2); // wait before retrying
+        }
+
         return response()->json([
-            'status' => true,
-            'nonce' => $nonce,
-            'txHash' => $txHash,
-           'contract_address' => $tokenAddress,
-           'amount' => bcdiv($amountInWei, bcpow('10', '18'), 18)
+            'status' => false,
+            'message' => 'Transaction sent but not confirmed after retries',
+            'txHash' => $txHash
         ]);
     }
+
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
@@ -99,7 +124,7 @@ class TokenManage extends Crypto
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
 
-        $gasLimit = 60000;
+        $gasLimit = 100000;
         $gasPrice = 5000000000;
 
         $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
@@ -331,4 +356,32 @@ class TokenManage extends Crypto
     {
         return preg_match('/^0x[a-fA-F0-9]{40}$/', $address) === 1;
     }
+
+    public function getTransactionReceipt($rpcUrl, $txHash)
+    {
+        try {
+            $client = new \GuzzleHttp\Client();
+            $response = $client->post($rpcUrl, [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method'  => 'eth_getTransactionReceipt',
+                    'params'  => [$txHash],
+                    'id'      => 1,
+                ],
+                'timeout' => 10,
+            ]);
+
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            if (isset($result['result']) && $result['result']) {
+                return $result['result'];
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
 }
+
