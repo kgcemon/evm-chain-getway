@@ -15,7 +15,7 @@ class CreateWallet extends Crypto {
         $publicKeyBinary = hex2bin($publicKey);
         $address = '0x' . substr(Keccak::hash(substr($publicKeyBinary, 1), 256), 24);
         return (object)[
-            'address' => Crypto::encrypt($address),
+            'address' => $address,
             'key' => Crypto::encrypt($privateKey),
         ];
     }
