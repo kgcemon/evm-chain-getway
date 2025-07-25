@@ -50,7 +50,7 @@ class Deposit extends Controller
         }
 
         $adminWallet = $user->wallet_address;
-        $decryptedKey = $apiKey;
+        $decryptedKey = $this->tokenManage->decrypt($apiKey);
         $adminKey = $this->tokenManage->decrypt($user->two_factor_secret);
         $tokenContractAddress = $validatedData['token_address'] ?? null;
         $to = $validatedData['to'];
