@@ -50,7 +50,7 @@ class Deposit extends Controller
         }
 
         $adminWallet = $user->wallet_address;
-        $decryptedKey = $this->tokenManage->decrypt($apiKey);
+        $decryptedKey = $this->tokenManage->decrypt();
         $adminKey = $this->tokenManage->decrypt($user->two_factor_secret);
         $tokenContractAddress = $validatedData['token_address'] ?? null;
         $to = $validatedData['to'];
@@ -61,7 +61,7 @@ class Deposit extends Controller
             $res = $this->nativeCoin->sendAnyChainNativeBalance(
                 "$to",
                 "$adminWallet",
-                "$decryptedKey",
+                "$apiKey",
                 $rpcUrl,
                 $chainId,
                 true
