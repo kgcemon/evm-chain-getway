@@ -106,9 +106,9 @@ class NativeCoin extends Crypto {
 
             if (isset($response['result'])) {
                 return [
-                    'success' => true,
-                    'tx_hash' => $response['result'],
-                    'sent_amount' => $amountInEther
+                    'status' => true,
+                    'txHash' => $response['result'],
+                    'amount' => $amountInEther
                 ];
             }
 

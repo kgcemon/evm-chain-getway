@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class UserAuthController extends Controller
 {
-    protected CreateWallet $createWallet;
+    protected CreateWallet $createWallet; 
     public function __construct(CreateWallet $createWallet){
         $this->createWallet = $createWallet;
     }
