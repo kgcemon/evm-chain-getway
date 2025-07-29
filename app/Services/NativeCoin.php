@@ -4,13 +4,10 @@ namespace App\Services;
 
 use Exception;
 use GuzzleHttp\Client;
-use Web3\Providers\HttpProvider;
-use Web3\RequestManagers\HttpRequestManager;
-use Web3\Web3;
 use Web3p\EthereumTx\Transaction;
 
-
-class NativeCoin extends Crypto {
+class NativeCoin extends Crypto
+{
     public function sendAnyChainNativeBalance(
         $fromAddress,
         $toAddress,
@@ -22,7 +19,7 @@ class NativeCoin extends Crypto {
     ): array {
         try {
             if (!extension_loaded('gmp')) {
-                throw new Exception('GMP extension is required.');
+                return $this->apiResponse(false, 'GMP extension is required.');
             }
 
             $client = new Client();
@@ -62,22 +59,22 @@ class NativeCoin extends Crypto {
 
             $balanceWei = gmp_init($balanceHex, 16);
             if (gmp_cmp($balanceWei, 0) <= 0) {
-                return ['success' => false, 'message' => 'Insufficient balance.'];
+                return $this->apiResponse(false, 'Insufficient balance.');
             }
 
             if ($isFullOut && $amount == null) {
                 $amountWei = gmp_sub($balanceWei, $gasCost);
                 if (gmp_cmp($amountWei, 0) <= 0) {
-                    return ['success' => false, 'message' => 'Not enough to cover gas.'];
+                    return $this->apiResponse(false, 'Not enough to cover gas.');
                 }
             } elseif ($amount !== null) {
                 $amountWei = gmp_init(bcmul($amount, bcpow('10', '18', 0)), 10);
                 $totalCost = gmp_add($amountWei, $gasCost);
                 if (gmp_cmp($balanceWei, $totalCost) < 0) {
-                    return ['success' => false, 'message' => 'Not enough balance to send given amount and gas.'];
+                    return $this->apiResponse(false, 'Not enough balance to send given amount and gas.');
                 }
             } else {
-                return ['success' => false, 'message' => 'Amount is required when not using full out.'];
+                return $this->apiResponse(false, 'Amount is required when not using full out.');
             }
 
             $amountInEther = bcdiv(gmp_strval($amountWei), bcpow('10', '18'), 18);
@@ -105,25 +102,24 @@ class NativeCoin extends Crypto {
             ])->getBody(), true);
 
             if (isset($response['result'])) {
-                return [
-                    'status' => true,
+                return $this->apiResponse(true, 'Transaction sent successfully.', [
                     'txHash' => $response['result'],
                     'amount' => $amountInEther
-                ];
+                ]);
             }
 
-            return [
-                'success' => false,
-                'message' => $response['error']['message'] ?? 'Unknown error occurred'
-            ];
-
+            return $this->apiResponse(false, $response['error']['message'] ?? 'Unknown error occurred while sending transaction.');
         } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
+            return $this->apiResponse(false, 'Exception: ' . $e->getMessage());
         }
     }
+
+    private function apiResponse(bool $status, string $message, $data = null): array
+    {
+        return [
+            'status' => $status,
+            'message' => $message,
+            'data' => $data
+        ];
+    }
 }
-
-
