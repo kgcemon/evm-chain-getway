@@ -64,7 +64,7 @@ class InvoiceCreateController extends Controller
             'message' => 'Invoice has been created.',
             'data'    => [
                 'invoice_id' => $job->invoice_id,
-                'address'    => $this->createWallet->decrypt($wallet->address),
+                'address'    => $wallet->address,
             ],
         ], 201);
     }
