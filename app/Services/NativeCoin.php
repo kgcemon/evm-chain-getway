@@ -119,7 +119,8 @@ class NativeCoin extends Crypto
         return [
             'status' => $status,
             'message' => $message,
-            'data' => $data
+            'txHash' => $data->txHash ?? null,
+            'amount' => $data->amount ?? null,
         ];
     }
 }
