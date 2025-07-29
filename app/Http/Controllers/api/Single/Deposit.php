@@ -92,8 +92,10 @@ class Deposit extends Controller
                         'token_name' => $tokenContractAddress,
                         'status' => $mainData->status,
                     ]);
-                }catch (\Exception $exception){}
-                return  $exception->getMessage();
+                }catch (\Exception $exception){
+                    return  $exception->getMessage();
+                }
+                return  $mainData;
             }else{
                 return response()->json([
                     'status' => false,
