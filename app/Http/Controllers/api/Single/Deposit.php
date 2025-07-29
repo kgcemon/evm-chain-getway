@@ -66,13 +66,7 @@ class Deposit extends Controller
                 $chainId,
                 true
             );
-            if (!empty($res['status']) && !empty($res['tx_hash'])) {
-                return response()->json([
-                    'status'     => true,
-                    'amount' => $res['sent_amount'],
-                    'tx_hash'    => $res["tx_hash"],
-                ]);
-            }
+           return $res;
         }elseif ($validatedData['type'] == 'token') {
             $data = $this->tokenManage->sendAnyChainTokenTransaction(
                 "$to",
