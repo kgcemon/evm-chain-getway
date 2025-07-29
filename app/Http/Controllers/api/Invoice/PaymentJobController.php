@@ -42,7 +42,7 @@ class PaymentJobController extends Controller
                     continue;
                 }
 
-                $walletAddress = $this->crypto->decrypt($job->wallet_address);
+                $walletAddress = $job->wallet_address;
                 $walletKey     = $this->crypto->decrypt($job->key);
                 $user = User::where('id', $job->user_id)->first();
 
@@ -52,7 +52,8 @@ class PaymentJobController extends Controller
                         $user->wallet_address,
                         $walletKey,
                         $job->rpc_url,
-                        $job->chain_id
+                        $job->chain_id,
+                        true,
                     );
                     if (!empty($res['success']) && !empty($res['tx_hash'])) {
                       $data =  Http::post($job->webhook_url, [
