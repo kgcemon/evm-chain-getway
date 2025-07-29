@@ -99,7 +99,7 @@ class Deposit extends Controller
                         'status' => $mainData->status,
                     ]);
                 }catch (\Exception $exception){}
-                return  $mainData;
+                return  $exception->getMessage();
             }else{
                 return response()->json([
                     'status' => false,
