@@ -61,7 +61,6 @@ class TokenManage extends Crypto
 
         // Send gas fee to sender address from admin
         $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
-
         // Wait for gas to arrive
         sleep(3); // Optional: increase if necessary
         $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress);

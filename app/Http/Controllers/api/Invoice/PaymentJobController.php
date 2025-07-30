@@ -37,7 +37,7 @@ class PaymentJobController extends Controller
 
         foreach ($jobs as $job) {
             try {
-                if ($job->created_at->lt(now()->subMinutes(20))) {
+                if ($job->created_at->lt(now()->subMinutes(60))) {
                     $this->expireJob($job);
                     continue;
                 }
@@ -48,26 +48,27 @@ class PaymentJobController extends Controller
 
                 if ($job->type === 'native') {
                     $res = $this->nativeCoin->sendAnyChainNativeBalance(
-                        $walletAddress,
+                        "$walletAddress",
                         $user->wallet_address,
                         $walletKey,
                         $job->rpc_url,
                         $job->chain_id,
                         true,
                     );
-                    if (!empty($res['success']) && !empty($res['tx_hash'])) {
+
+                    if (!empty($res['status']) && !empty($res['txHash'])) {
                       $data =  Http::post($job->webhook_url, [
                             'status'     => true,
                             'invoice_id' => $job->invoice_id,
-                            'amount' => $res['sent_amount'],
-                            'tx_hash'    => $res["tx_hash"],
+                            'amount' => $res['amount'],
+                            'txHash'    => $res["txHash"],
                         ]);
                         $job->status = 'completed';
-                        $job->tx_hash = $res["tx_hash"];
+                        $job->tx_hash = $res["txHash"];
                         $job->save();
                         return $data;
                     } else {
-                        break;
+                        continue;
                     }
                 }elseif ($job->type == 'token') {
                   $data = $this->tokenManage->sendAnyChainTokenTransaction(
@@ -78,11 +79,10 @@ class PaymentJobController extends Controller
                       "$job->rpc_url",
                       "$job->chain_id",
                       "$user->wallet_address",
-                      "$user->two_factor_secret",
+                      $this->crypto->decrypt($user->two_factor_secret),
                       null,
                       true
                   );
-
                   $mainData = $data->getData();
                   if ($mainData->status === true) {
                       $job->status = 'completed';
@@ -96,6 +96,7 @@ class PaymentJobController extends Controller
                 }
 
             } catch (\Throwable $e) {
+                echo $e->getMessage();
                 continue;
             }
         }
