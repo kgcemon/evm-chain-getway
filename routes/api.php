@@ -19,4 +19,5 @@ Route::post('/payout', [Withdrawal::class, 'payout']);
 Route::post('/deposit', [Deposit::class, 'deposit']);
 Route::post('create-account', [UserAuthController::class, 'createAccount']);
 Route::post('create-wallet', [CreateWallet::class, 'createAddress']);
+Route::middleware(['throttle:10,1'])->get('payments/{id}', [PaymentJobController::class, 'checkNewPayments']);
 

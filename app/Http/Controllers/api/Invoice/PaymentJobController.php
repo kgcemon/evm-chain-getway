@@ -4,20 +4,24 @@ namespace App\Http\Controllers\api\Invoice;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentJobs;
 use App\Models\User;
+use App\Services\CheckBalance;
 use App\Services\Crypto;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Request;
 
 class PaymentJobController extends Controller
 {
     protected Crypto $crypto;
     protected TokenManage $tokenManage;
     protected NativeCoin $nativeCoin;
+    protected CheckBalance $checkBalance;
     public function __construct(Crypto $crypto, TokenManage $tokenManage, NativeCoin $nativeCoin){
         $this->crypto = $crypto;
         $this->tokenManage = $tokenManage;
         $this->nativeCoin = $nativeCoin;
+        $this->checkBalance = new CheckBalance();
     }
 
     public function Jobs()
@@ -118,6 +122,37 @@ class PaymentJobController extends Controller
                 'invoice_id' => $job->invoice_id,
                 'message'   => 'time has been expired.',
                 ],
+        ]);
+    }
+
+    public function checkNewPayments($id)
+    {
+        $invoiceId = $id;
+        if (!$invoiceId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invoice id is required.',
+            ]);
+        }
+        $rpc = PaymentJobs::where('invoice_id', $invoiceId)->first();
+        if (!$rpc) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invoice id not found.',
+            ]);
+        }
+        $balance = $this->checkBalance->balance($rpc->rpc_url,$rpc->wallet_address);
+
+        if ($balance < 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'no new transaction found.',
+            ]);
+        }
+        return response()->json([
+            'status' => true,
+            'message' => 'congregation new transaction'.$balance,
+            'balance' => $balance,
         ]);
     }
 
