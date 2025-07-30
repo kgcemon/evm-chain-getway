@@ -127,34 +127,39 @@ class PaymentJobController extends Controller
 
     public function checkNewPayments($id)
     {
-        $invoiceId = $id;
-        if (!$invoiceId) {
+        if (!$id) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invoice id is required.',
+                'message' => 'Invoice ID is required.',
             ]);
         }
-        $rpc = PaymentJobs::where('invoice_id', $invoiceId)->first();
+
+        $rpc = PaymentJobs::where('invoice_id', $id)->first();
+
         if (!$rpc) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invoice id not found.',
+                'message' => 'Invoice not found.',
             ]);
         }
-        $balance = $this->checkBalance->balance($rpc->rpc_url,$rpc->wallet_address);
 
-        if ($balance < 0) {
+        $balance = $this->checkBalance->balance($rpc->rpc_url, $rpc->wallet_address);
+
+        if ($balance > 0.0) {
             return response()->json([
-                'status' => false,
-                'message' => 'no new transaction found.',
+                'status' => true,
+                'message' => 'New transaction detected!',
+                'balance' => $balance,
             ]);
         }
+
         return response()->json([
-            'status' => true,
-            'message' => 'congregation new transaction'.$balance,
+            'status' => false,
+            'message' => 'No new transaction found.',
             'balance' => $balance,
         ]);
     }
+
 
 
 }
