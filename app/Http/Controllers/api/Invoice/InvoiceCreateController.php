@@ -29,6 +29,16 @@ class InvoiceCreateController extends Controller
             'user_id'          => 'required|integer|exists:users,id',
         ]);
 
+        if ($validated['type'] === 'token') {
+            if (empty($validated['contract_address'])) {
+                return response()->json([
+                   'status'    => false,
+                   'message'    => 'Contract cannot be null',
+                ]);
+            }
+        }
+
+
         $chainData = ChainList::where('chain_id', $validated['chain_id'])->first();
 
         if (!$chainData){

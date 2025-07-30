@@ -9,7 +9,6 @@ use App\Services\Crypto;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Request;
 
 class PaymentJobController extends Controller
 {
@@ -41,11 +40,12 @@ class PaymentJobController extends Controller
 
         foreach ($jobs as $job) {
             try {
-                if ($job->created_at->lt(now()->subMinutes(60))) {
+                if ($job->created_at->lt(now()->subMinutes(20))) {
                     $this->expireJob($job);
                     continue;
                 }
-
+                $job->status = 'processing';
+                $job->save();
                 $walletAddress = $job->wallet_address;
                 $walletKey     = $this->crypto->decrypt($job->key);
                 $user = User::where('id', $job->user_id)->first();
@@ -72,6 +72,8 @@ class PaymentJobController extends Controller
                         $job->save();
                         return $data;
                     } else {
+                        $job->status = 'pending';
+                        $job->save();
                         continue;
                     }
                 }elseif ($job->type == 'token') {
@@ -94,12 +96,16 @@ class PaymentJobController extends Controller
                       $job->save();
                       return  Http::post($job->webhook_url,$data->getData());
                   }else{
+                      $job->status = 'pending';
+                      $job->save();
                       continue;
                   }
 
                 }
 
             } catch (\Throwable $e) {
+                $job->status = 'pending';
+                $job->save();
                 echo $e->getMessage();
                 continue;
             }
@@ -148,6 +154,7 @@ class PaymentJobController extends Controller
         if ($balance > 0.0) {
             return response()->json([
                 'status' => true,
+                'payment_status' => $rpc->status,
                 'message' => 'New transaction detected!',
                 'balance' => $balance,
             ]);
@@ -155,6 +162,7 @@ class PaymentJobController extends Controller
 
         return response()->json([
             'status' => false,
+            'payment_status' => $rpc->status,
             'message' => 'No new transaction found.',
             'balance' => $balance,
         ]);

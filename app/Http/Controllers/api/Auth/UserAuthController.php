@@ -7,10 +7,11 @@ use App\Models\User;
 use App\Services\CreateWallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserAuthController extends Controller
 {
-    protected CreateWallet $createWallet; 
+    protected CreateWallet $createWallet;
     public function __construct(CreateWallet $createWallet){
         $this->createWallet = $createWallet;
     }
@@ -41,6 +42,26 @@ class UserAuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Account not created.',
+            ]);
+        }
+    }
+    public function login(Request $request):JsonResponse{
+        $validatedData = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+        $user = User::where('email', $validatedData['email'])->first();
+
+        if (!$user || !Hash::check($validatedData['password'], $user->password)) {
+            return response()->json([
+                'message' => 'The provided credentials are incorrect.',
+            ]);
+        }else{
+            $token = $user->createToken('auth_token')->plainTextToken;
+            return response()->json([
+                'message' => 'User logged in successfully',
+                'user' => $user,
+                'token' => $token,
             ]);
         }
     }
