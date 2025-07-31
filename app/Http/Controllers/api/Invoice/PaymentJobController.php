@@ -149,7 +149,7 @@ class PaymentJobController extends Controller
             ]);
         }
 
-        $balance = $this->checkBalance->balance($rpc->rpc_url, $rpc->wallet_address);
+        $balance = $this->checkBalance->balance($rpc->rpc_url, $rpc->wallet_address,$rpc->type);
 
         if ($balance > 0.0) {
             return response()->json([
