@@ -151,6 +151,9 @@ class PaymentJobController extends Controller
 
         $balance = $this->checkBalance->balance($rpc->rpc_url, $rpc->wallet_address,$rpc->type,$rpc->contract_address);
         if ($balance > 0.0) {
+            dispatch(function () {
+                $this->Jobs();
+            });
             return response()->json([
                 'status' => true,
                 'payment_status' => $rpc->status,
