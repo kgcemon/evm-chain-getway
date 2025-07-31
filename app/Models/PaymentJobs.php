@@ -28,7 +28,7 @@ class PaymentJobs extends Model
     public static function generateUIDCode(): string
     {
         do {
-            $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 10));
+            $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 14));
         } while (self::where('invoice_id', $code)->exists());
 
         return $code;

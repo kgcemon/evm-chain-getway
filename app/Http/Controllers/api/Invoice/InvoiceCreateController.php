@@ -67,7 +67,7 @@ class InvoiceCreateController extends Controller
             'contract_address' => $validated['contract_address'] ?? null,
             'invoice_id'       => PaymentJobs::generateUIDCode(),
             'user_id'          => $validated['user_id'],
-            'amount'           => $validated['amount'] ?? 0,
+            'amount'           => $request->input('amount') ?? 0,
         ]);
 
         return response()->json([
