@@ -169,5 +169,21 @@ class PaymentJobController extends Controller
     }
 
 
+    public function invoiceData($invoice_id)
+    {$invoice = PaymentJobs::where('invoice_id', $invoice_id)->select('token_name','wallet_address','amount','created_at')->first();
+        if (!$invoice) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invoice not found.',
+            ]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'invoice' => $invoice,
+        ]);
+    }
+
+
 
 }

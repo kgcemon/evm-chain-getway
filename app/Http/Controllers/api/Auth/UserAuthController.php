@@ -59,10 +59,22 @@ class UserAuthController extends Controller
         }else{
             $token = $user->createToken('auth_token')->plainTextToken;
             return response()->json([
+                'status' => true,
                 'message' => 'User logged in successfully',
                 'user' => $user,
                 'token' => $token,
             ]);
         }
+    }
+
+    public function profile(Request $request):JsonResponse
+    {
+        $user = $request->user();
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $user,
+            ],
+        ]);
     }
 }

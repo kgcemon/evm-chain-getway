@@ -9,9 +9,7 @@ use App\Services\CreateWallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+Route::get('/user',[UserAuthController::class,'profile'])->middleware('auth:sanctum');
 
 //auth
 Route::post('create-account', [UserAuthController::class, 'createAccount']);
