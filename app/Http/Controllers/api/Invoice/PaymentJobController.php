@@ -94,7 +94,12 @@ class PaymentJobController extends Controller
                       $job->status = 'completed';
                       $job->tx_hash = $mainData->txHash;
                       $job->save();
-                      return  Http::post($job->webhook_url,$data->getData());
+                      return  Http::post($job->webhook_url,[
+                          'status'     => 'completed',
+                          'invoice_id' => $job->invoice_id,
+                          'amount'     => $mainData->amount,
+                          'txHash'     => $mainData->txHash,
+                      ]);
                   }else{
                       $job->status = 'pending';
                       $job->save();
