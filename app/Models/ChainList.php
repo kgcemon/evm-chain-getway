@@ -10,6 +10,7 @@ class ChainList extends Model
     protected $table = 'chain_list';
     protected $fillable = [
         'chain_id',
+        'icon',
         'chain_name',
         'chain_rpc_url',
         'status',

@@ -7,7 +7,6 @@ use App\Models\ChainList;
 use App\Services\CheckBalance;
 use Illuminate\Http\Request;
 
-
 class ClientWalletBalanceController extends Controller
 {
     protected CheckBalance $checkBalance;
