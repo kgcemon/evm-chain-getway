@@ -18,44 +18,54 @@ class ClientWalletBalanceController extends Controller
     public function balanceList(Request $request)
     {
         $user = $request->user();
-
         $wallet = $user->wallet_address;
 
         $allChain = ChainList::with('token')->get();
         $list = [];
 
-        foreach ($allChain as $chain) {
-            $nativeBalance = $this->checkBalance->balance($chain->chain_rpc_url, $wallet, 'native');
+        try {
+            foreach ($allChain as $chain) {
+                $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet, 'native');
 
-            $tokenBalances = [];
-            foreach ($chain->token as $token) {
-                $balance = $this->checkBalance->balance(
-                    $chain->chain_rpc_url,
-                    $wallet,
-                    'token',
-                    $token->contract_address // এটা ধরেই নিচ্ছি টেবিলে আছে
-                );
+                $tokenBalances = [];
+                foreach ($chain->token as $token) {
+                    $balance = (float) $this->checkBalance->balance(
+                        $chain->chain_rpc_url,
+                        $wallet,
+                        'token',
+                        $token->contract_address
+                    );
 
-                $tokenBalances[] = [
-                    'name' => $token->token_name ?? '',
-                    'symbol' => $token->symbol ?? '',
-                    'balance' => $balance,
-                    'icon' => $token->icon ?? null,
-                ];
+                    if ($balance > 0) {
+                        $tokenBalances[] = [
+                            'name' => $token->token_name ?? '',
+                            'symbol' => $token->symbol ?? '',
+                            'balance' => number_format($balance, 4, '.', ''), // 4 decimal
+                            'icon' => $token->icon ?? null,
+                        ];
+                    }
+                }
+
+                if ($nativeBalance > 0 || count($tokenBalances) > 0) {
+                    $list[] = [
+                        'chain' => $chain->chain_name,
+                        'icon' => $chain->icon ?? null,
+                        'native_balance' => number_format($nativeBalance, 4, '.', ''),
+                        'tokens' => $tokenBalances,
+                    ];
+                }
             }
 
-            $list[] = [
-                'chain' => $chain->chain_name,
-                'icon' => $chain->icon ?? null,
-                'native_balance' => $nativeBalance,
-                'tokens' => $tokenBalances,
-            ];
+            return response()->json([
+                'success' => true,
+                'data' => $list,
+            ]);
+        } catch (\Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ]);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => $list,
-        ]);
     }
 
 
