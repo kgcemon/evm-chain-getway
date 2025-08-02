@@ -24,6 +24,7 @@ return new class extends Migration
             $table->enum('type',['native','token']);
             $table->string('contract_address')->nullable();
             $table->string('tx_hash')->nullable();
+            $table->integer('amount')->default(0);
             $table->enum('status', ['pending', 'processing', 'completed','expired'])->default('pending');
             $table->timestamps();
         });
