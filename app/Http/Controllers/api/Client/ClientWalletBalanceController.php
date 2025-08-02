@@ -5,7 +5,8 @@ namespace App\Http\Controllers\api\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ChainList;
 use App\Services\CheckBalance;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
+
 
 class ClientWalletBalanceController extends Controller
 {
