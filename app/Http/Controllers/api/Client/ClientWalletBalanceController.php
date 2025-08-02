@@ -52,7 +52,10 @@ class ClientWalletBalanceController extends Controller
             ];
         }
 
-        return response()->json($list);
+        return response()->json([
+            'success' => true,
+            'data' => $list,
+        ]);
     }
 
 
