@@ -9,9 +9,13 @@ use App\Http\Controllers\api\Single\Withdrawal;
 use App\Services\CreateWallet;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user',[UserAuthController::class,'profile'])->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('my-balance',[ClientWalletBalanceController::class,'balanceList']);
+    Route::get('/user',[UserAuthController::class,'profile']);
+});
 
-Route::get('my-balance',[ClientWalletBalanceController::class,'balanceList']);
+
+
 
 //auth
 Route::post('create-account', [UserAuthController::class, 'createAccount']);
