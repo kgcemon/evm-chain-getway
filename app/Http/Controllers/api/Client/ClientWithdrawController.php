@@ -21,17 +21,16 @@ class ClientWithdrawController extends Controller
 
     public function withdraw(Request $request)
     {
-        $validate = $request->validate([
-            'amount' => 'required',
-            'chain_id' => 'required',
-            'token_id' => 'sometimes',
-            'address' => 'required',
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.00000001',
+            'chain_id' => 'required|exists:chain_lists,id',
+            'token_id' => 'sometimes|nullable|exists:token_lists,id',
+            'address' => 'required|string',
         ]);
 
         $user = $request->user();
+        $chain = ChainList::find($validated['chain_id']);
 
-        $chain = ChainList::where('id',$validate['chain_id'])->first();
-        $token = null;
         if (!$chain) {
             return response()->json([
                 'status' => false,
@@ -39,79 +38,65 @@ class ClientWithdrawController extends Controller
             ]);
         }
 
-        $tokenID = $validate['token_id'] ?? null;
+        $token = null;
+        $type = 'native';
 
-        if($tokenID != null){
-            $token = TokenList::where('id',$validate['token_id'])->where('chain_id',$validate['chain_id'])->first();
+        if (!empty($validated['token_id'])) {
+            $token = TokenList::where('id', $validated['token_id'])
+                ->where('chain_id', $chain->id)
+                ->first();
+
+            if ($token) {
+                $type = 'token';
+            }
         }
 
-        $type = $token != null ? 'token' : 'native';
-
-        switch ($type) {
-            case 'token':
+        try {
+            if ($type === 'token') {
                 $ress = $this->tokenManage->sendAnyChainTokenTransaction(
                     $user->wallet_address,
                     $token->contract_address,
-                    $validate['address'],
+                    $validated['address'],
                     $this->tokenManage->decrypt($user->two_factor_secret),
                     $chain->chain_rpc_url,
                     $chain->chain_id,
                     $user->wallet_address,
                     $this->tokenManage->decrypt($user->two_factor_secret),
-                    $validate['amount']
+                    $validated['amount']
                 );
-
-                try {
-                    Transactions::create([
-                        'user_id' => $user->id,
-                        'chain_id' => $chain->chain_id,
-                        'amount' => $ress->amount,
-                        'trx_hash' => $ress->txHash,
-                        'type' => $type,
-                        'token_name' => $chain->chain_name,
-                        'status' => $ress->status,
-                    ]);
-                }catch (\Exception $exception){}
-
-            return $ress;
-
-            case 'native':
-                try {
-                    $ress = $this->nativeCoin->
-                    sendAnyChainNativeBalance(
-                        "$user->wallet_address",
-                        $validate['address'],
-                        $this->tokenManage->decrypt($user->two_factor_secret),
-                        $chain->chain_rpc_url,
-                        $chain->chain_id,
-                        false,
-                        $validate['amount']
-                    );
+            } else {
+                $ress = $this->nativeCoin->sendAnyChainNativeBalance(
+                    $user->wallet_address,
+                    $validated['address'],
+                    $this->tokenManage->decrypt($user->two_factor_secret),
+                    $chain->chain_rpc_url,
+                    $chain->chain_id,
+                    false,
+                    $validated['amount']
+                );
+            }
 
 
-//                         Transactions::create([
-//                               'user_id' => $user->id,
-//                               'chain_id' => $chain->id,
-//                               'amount' => $ress['amount'],
-//                               'trx_hash' => $ress['txHash'],
-//                               'type' => $type,
-//                               'token_name' => $chain->chain_name,
-//                               'status' => $ress['status'],
-//                           ]);
+            $responseData = is_array($ress) ? $ress : json_decode(json_encode($ress), true);
 
-                    return $ress;
-                }catch (\Exception $exception){
-                    return response()->json([
-                        'status' => false,
-                        'message' => $exception->getMessage()
-                    ]);
-                }
+            Transactions::create([
+                'user_id'    => $user->id,
+                'chain_id'   => $chain->id,
+                'amount'     => (float) ($responseData['amount'] ?? 0),
+                'trx_hash'   => $responseData['txHash'] ?? null,
+                'type'       => $type,
+                'token_name' => $chain->chain_name,
+                'status'     => ($responseData['status'] ?? false) ? 1 : 0,
+            ]);
 
-            default:
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Invalid withdrawal type.'
-                ]);
+            return response()->json($responseData);
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Withdrawal failed: ' . $e->getMessage(),
+            ]);
         }
     }
+
 }
