@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\Client\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Transactions;
 use App\Models\User;
 use App\Services\CreateWallet;
 use Illuminate\Http\JsonResponse;
@@ -74,6 +75,7 @@ class UserAuthController extends Controller
             'success' => true,
             'data' => [
                 'user' => $user,
+                'total_transactions' => Transactions::where('user_id', $user->id)->count(),
             ],
         ]);
     }

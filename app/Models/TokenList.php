@@ -7,4 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class TokenList extends Model
 {
     protected $table = 'token_list';
+
+    public function chain()
+    {
+        return $this->hasOne(ChainList::class, 'chain_id', 'chain_id');
+    }
 }

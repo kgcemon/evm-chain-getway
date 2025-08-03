@@ -38,6 +38,7 @@ class ClientWalletBalanceController extends Controller
                     if ($balance > 0) {
                         $tokenBalances[] = [
                             'id' => $token->id,
+                            'chain_id' => $chain->id,
                             'name' => $token->token_name ?? '',
                             'symbol' => $token->symbol ?? '',
                             'balance' => number_format($balance, 4, '.', ''), // 4 decimal
