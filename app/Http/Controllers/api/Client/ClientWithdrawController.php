@@ -87,17 +87,24 @@ class ClientWithdrawController extends Controller
                         false,
                         $validate['amount']
                     );
-                    try {
-                        Transactions::create([
-                            'user_id' => $user->id,
-                            'chain_id' => $chain->chain_id,
-                            'amount' => $ress['amount'],
-                            'trx_hash' => $ress['txHash'],
-                            'type' => $type,
-                            'token_name' => $chain->chain_name,
-                            'status' => $ress['status'],
-                        ]);
-                    }catch (\Exception $exception){}
+                   if ($ress['status']) {
+                       try {
+                           Transactions::create([
+                               'user_id' => $user->id,
+                               'chain_id' => $chain->chain_id,
+                               'amount' => $ress['amount'],
+                               'trx_hash' => $ress['txHash'],
+                               'type' => $type,
+                               'token_name' => $chain->chain_name,
+                               'status' => $ress['status'],
+                           ]);
+                       }catch (\Exception $exception){
+                           return response()->json([
+                               'status' => false,
+                               'message' => $exception->getMessage()
+                           ]);
+                       }
+                   }
                     return $ress;
                 }catch (\Exception $exception){
                     return response()->json([
