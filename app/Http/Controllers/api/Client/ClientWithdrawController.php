@@ -40,7 +40,7 @@ class ClientWithdrawController extends Controller
             ]);
         }
 
-        $tokenID =$validate['token_id'];
+        $tokenID = $validate['token_id'] ?? null;
 
         if($tokenID != null){
             $token = TokenList::where('id',$validate['token_id'])->where('chain_id',$validate['chain_id'])->first();
