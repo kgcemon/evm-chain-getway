@@ -83,7 +83,7 @@ class ClientWithdrawController extends Controller
                         $validate['address'],
                         $this->tokenManage->decrypt($user->two_factor_secret),
                         $chain->chain_rpc_url,
-                        $chain->chain_id,
+                        $chain->id,
                         false,
                         $validate['amount']
                     );
@@ -91,7 +91,7 @@ class ClientWithdrawController extends Controller
                        try {
                            Transactions::create([
                                'user_id' => $user->id,
-                               'chain_id' => $chain->chain_id,
+                               'chain_id' => $chain->id,
                                'amount' => $ress['amount'],
                                'trx_hash' => $ress['txHash'],
                                'type' => $type,
