@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Exception;
 use GuzzleHttp\Client;
 use Web3p\EthereumTx\Transaction;
 

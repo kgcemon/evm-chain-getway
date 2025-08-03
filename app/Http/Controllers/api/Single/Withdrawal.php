@@ -79,22 +79,24 @@ class Withdrawal extends Controller
                         false,
                         $amount
                     );
-                    try {
-                        Transactions::create([
-                            'user_id' => $user->id,
-                            'chain_id' => $chainId,
-                            'amount' => $res['amount'],
-                            'trx_hash' => $res['txHash'],
-                            'type' => $validatedData['type'],
-                            'token_name' => $tokenContractAddress,
-                            'status' => $res['status'],
-                        ]);
-                    }catch (\Exception $exception){
-                        return response()->json([
-                            'status' => false,
-                            'message' => $exception->getMessage()
-                        ]);
-                    }
+                   if ($res->status) {
+                       try {
+                           Transactions::create([
+                               'user_id' => $user->id,
+                               'chain_id' => $chainId,
+                               'amount' => $res->amount,
+                               'trx_hash' => $res->txHash,
+                               'type' => $validatedData->type,
+                               'token_name' => $tokenContractAddress,
+                               'status' => $res->status,
+                           ]);
+                       }catch (\Exception $exception){
+                           return response()->json([
+                               'status' => false,
+                               'message' => $exception->getMessage()
+                           ]);
+                       }
+                   }
                     return $res;
                 }catch (\Exception $exception){
                     return response()->json([

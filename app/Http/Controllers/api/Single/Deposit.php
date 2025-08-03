@@ -66,16 +66,16 @@ class Deposit extends Controller
                 $chainId,
                 true
             );
-            if ($res['status']){
+            if ($res->status){
                 try {
                     Transactions::create([
                         'user_id' => $user->id,
                         'chain_id' => $chainData->id,
-                        'amount' => $res['amount'],
-                        'trx_hash' => $res['txHash'],
+                        'amount' => $res->amount,
+                        'trx_hash' => $res->txHash,
                         'type' => $validatedData['type'],
                         'token_name' => $tokenContractAddress,
-                        'status' => $res['status'],
+                        'status' => $res->status,
                     ]);
                 }catch (\Exception $exception){
                 }
