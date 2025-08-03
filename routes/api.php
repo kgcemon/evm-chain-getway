@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\Client\Auth\UserAuthController;
+use App\Http\Controllers\api\Client\ClientTransactionController;
 use App\Http\Controllers\api\Client\ClientWalletBalanceController;
 use App\Http\Controllers\api\Client\ClientWithdrawController;
 use App\Http\Controllers\api\Invoice\InvoiceCreateController;
@@ -14,7 +15,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('my-balance',[ClientWalletBalanceController::class,'balanceList']);
     Route::get('/user',[UserAuthController::class,'profile']);
     Route::post('/withdraw',[ClientWithdrawController::class,'withdraw']);
-    Route::get('transactions',[ClientWithdrawController::class,'index']);
+    Route::get('transactions',[ClientTransactionController::class,'index']);
 });
 
 

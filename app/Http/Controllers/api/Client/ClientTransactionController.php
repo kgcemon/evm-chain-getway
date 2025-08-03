@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\api\Client;
 
+use App\Http\Controllers\Controller;
 use App\Models\Transactions;
 use Illuminate\Http\Request;
 
