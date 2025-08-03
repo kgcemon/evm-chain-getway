@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ChainList;
 use App\Models\TokenList;
+use App\Models\Transactions;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
 use Illuminate\Http\Request;
@@ -48,7 +49,7 @@ class ClientWithdrawController extends Controller
 
         switch ($type) {
             case 'token':
-                return $this->tokenManage->sendAnyChainTokenTransaction(
+                $ress = $this->tokenManage->sendAnyChainTokenTransaction(
                     $user->wallet_address,
                     $token->contract_address,
                     $validate['address'],
@@ -60,9 +61,23 @@ class ClientWithdrawController extends Controller
                     $validate['amount']
                 );
 
+                try {
+                    Transactions::create([
+                        'user_id' => $user->id,
+                        'chain_id' => $chain->chain_id,
+                        'amount' => $ress['amount'],
+                        'trx_hash' => $ress['txHash'],
+                        'type' => $type,
+                        'token_name' => $chain->chain_name,
+                        'status' => $ress['status'],
+                    ]);
+                }catch (\Exception $exception){}
+
+            return $ress;
+
             case 'native':
                 try {
-                    return $this->nativeCoin->
+                    $ress = $this->nativeCoin->
                     sendAnyChainNativeBalance(
                         "$user->wallet_address",
                         $validate['address'],
@@ -72,7 +87,18 @@ class ClientWithdrawController extends Controller
                         false,
                         $validate['amount']
                     );
-
+                    try {
+                        Transactions::create([
+                            'user_id' => $user->id,
+                            'chain_id' => $chain->chain_id,
+                            'amount' => $ress['amount'],
+                            'trx_hash' => $ress['txHash'],
+                            'type' => $type,
+                            'token_name' => $chain->chain_name,
+                            'status' => $ress['status'],
+                        ]);
+                    }catch (\Exception $exception){}
+                    return $ress;
                 }catch (\Exception $exception){
                     return response()->json([
                         'status' => false,
