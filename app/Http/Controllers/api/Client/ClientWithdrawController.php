@@ -31,7 +31,7 @@ class ClientWithdrawController extends Controller
 
         $user = $request->user();
 
-        $chain = ChainList::where('chain_id',$validate['chain_id'])->first();
+        $chain = ChainList::where('id',$validate['chain_id'])->first();
         $token = null;
         if (!$chain) {
             return response()->json([
