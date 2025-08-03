@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\Single;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PayOutRequest;
+use App\Models\Transactions;
 use App\Models\User;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
@@ -40,7 +41,7 @@ class Withdrawal extends Controller
 
         switch ($validatedData['type']) {
             case 'token':
-                return $this->tokenManage->sendAnyChainTokenTransaction(
+                $res = $this->tokenManage->sendAnyChainTokenTransaction(
                     $userWallet,
                     $tokenContractAddress,
                     $to,
@@ -52,9 +53,23 @@ class Withdrawal extends Controller
                     $amount
                 );
 
+                try {
+                    Transactions::create([
+                        'user_id' => $user->id,
+                        'chain_id' => $chainId,
+                        'amount' => $res['amount'],
+                        'trx_hash' => $res['txHash'],
+                        'type' => $validatedData['type'],
+                        'token_name' => $tokenContractAddress,
+                        'status' => $res['status'],
+                    ]);
+                }catch (\Exception $exception){
+                }
+                return $res;
+
             case 'native':
                 try {
-                    return $this->nativeCoin->
+                    $res = $this->nativeCoin->
                     sendAnyChainNativeBalance(
                         "$userWallet",
                          $to,
@@ -64,7 +79,19 @@ class Withdrawal extends Controller
                         false,
                         $amount
                     );
-
+                    try {
+                        Transactions::create([
+                            'user_id' => $user->id,
+                            'chain_id' => $chainId,
+                            'amount' => $res['amount'],
+                            'trx_hash' => $res['txHash'],
+                            'type' => $validatedData['type'],
+                            'token_name' => $tokenContractAddress,
+                            'status' => $res['status'],
+                        ]);
+                    }catch (\Exception $exception){
+                    }
+                    return $res;
                 }catch (\Exception $exception){
                     return response()->json([
                         'status' => false,
