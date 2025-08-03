@@ -87,7 +87,7 @@ class ClientWithdrawController extends Controller
                         false,
                         $validate['amount']
                     );
-                   if ($ress->status) {
+
 
                            Transactions::create([
                                'user_id' => $user->id,
@@ -99,7 +99,6 @@ class ClientWithdrawController extends Controller
                                'status' => $ress->status,
                            ]);
 
-                   }
                     return $ress;
                 }catch (\Exception $exception){
                     return response()->json([
