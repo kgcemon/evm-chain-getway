@@ -78,7 +78,7 @@ class ClientWithdrawController extends Controller
 
 
             $responseData = is_array($ress) ? $ress : json_decode(json_encode($ress), true);
-            $trxHash = $responseData['trx_hash'];
+            $trxHash = $responseData['txHash'];
             Transactions::create([
                 'user_id'    => $user->id,
                 'chain_id'   => $chain->id,
