@@ -76,17 +76,14 @@ class ClientWithdrawController extends Controller
                 );
             }
 
-
-            $responseData = is_array($ress) ? $ress : json_decode(json_encode($ress), true);
-            $trxHash = $responseData['txHash'];
             Transactions::create([
                 'user_id'    => $user->id,
                 'chain_id'   => $chain->id,
-                'amount'     => (float) ($type == 'native' ? $responseData['amount'] : $responseData->amount),
-                'trx_hash'   => $responseData->txHash,
+                'amount'     => $type == 'native' ? $ress['amount'] : $ress->amount,
+                'trx_hash'   => $type == 'native' ?  $ress['txHash'] : $ress->txHash,
                 'type'       => $type,
                 'token_name' => $type == 'token' ? $token->token_name : $chain->chain_name,
-                'status'     => ($responseData['status'] ?? false) ? 1 : 0,
+                'status'     => ($type == 'native' ? $ress['status'] : $ress->status) ? 1 : 0,
             ]);
 
             return $ress;
