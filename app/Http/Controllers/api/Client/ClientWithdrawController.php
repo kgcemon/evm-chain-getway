@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\api\Client;
-
-use App\Http\Controllers\api\Single\Withdrawal;
 use App\Http\Controllers\Controller;
 use App\Models\ChainList;
 use App\Models\TokenList;
