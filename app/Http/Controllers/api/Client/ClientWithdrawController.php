@@ -79,17 +79,17 @@ class ClientWithdrawController extends Controller
 
             $responseData = is_array($ress) ? $ress : json_decode(json_encode($ress), true);
 
-            Transactions::create([
-                'user_id'    => $user->id,
-                'chain_id'   => $chain->id,
-                'amount'     => (float) ($responseData['amount'] ?? 0),
-                'trx_hash'   => $responseData['txHash'] ?? null,
-                'type'       => $type,
-                'token_name' => $chain->chain_name,
-                'status'     => ($responseData['status'] ?? false) ? 1 : 0,
-            ]);
+//            Transactions::create([
+//                'user_id'    => $user->id,
+//                'chain_id'   => $chain->id,
+//                'amount'     => (float) ($responseData['amount'] ?? 0),
+//                'trx_hash'   => $responseData['txHash'] ?? null,
+//                'type'       => $type,
+//                'token_name' => $chain->chain_name,
+//                'status'     => ($responseData['status'] ?? false) ? 1 : 0,
+//            ]);
 
-            return response()->json($responseData);
+            return $ress;
         } catch (\Throwable $e) {
 
             return response()->json([
