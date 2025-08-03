@@ -29,7 +29,7 @@ class ClientWithdrawController extends Controller
         ]);
 
         $user = $request->user();
-        $chain = ChainList::find($validated['chain_id']);
+        $chain = ChainList::where('id', $validated['chain_id'])->first();
 
         if (!$chain) {
             return response()->json([
