@@ -78,12 +78,12 @@ class ClientWithdrawController extends Controller
 
 
             $responseData = is_array($ress) ? $ress : json_decode(json_encode($ress), true);
-
+            $trxHash = $responseData['trx_hash'];
             Transactions::create([
                 'user_id'    => $user->id,
                 'chain_id'   => $chain->id,
                 'amount'     => (float) ($responseData['amount'] ?? 0),
-                'trx_hash'   => $responseData->txHash == null ? $responseData['txHash'] : $responseData->txHash,
+                'trx_hash'   => $trxHash ?? $responseData->txHash,
                 'type'       => $type,
                 'token_name' => $chain->chain_name ."$token->token_name",
                 'status'     => ($responseData['status'] ?? false) ? 1 : 0,
