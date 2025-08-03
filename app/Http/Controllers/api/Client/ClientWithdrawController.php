@@ -65,11 +65,11 @@ class ClientWithdrawController extends Controller
                     Transactions::create([
                         'user_id' => $user->id,
                         'chain_id' => $chain->chain_id,
-                        'amount' => $ress['amount'],
-                        'trx_hash' => $ress['txHash'],
+                        'amount' => $ress->amount,
+                        'trx_hash' => $ress->txHash,
                         'type' => $type,
                         'token_name' => $chain->chain_name,
-                        'status' => $ress['status'],
+                        'status' => $ress->status,
                     ]);
                 }catch (\Exception $exception){}
 
@@ -83,20 +83,20 @@ class ClientWithdrawController extends Controller
                         $validate['address'],
                         $this->tokenManage->decrypt($user->two_factor_secret),
                         $chain->chain_rpc_url,
-                        $chain->id,
+                        $chain->chain_id,
                         false,
                         $validate['amount']
                     );
-                   if ($ress['status']) {
+                   if ($ress->status) {
                        try {
                            Transactions::create([
                                'user_id' => $user->id,
                                'chain_id' => $chain->id,
-                               'amount' => $ress['amount'],
-                               'trx_hash' => $ress['txHash'],
+                               'amount' => $ress->amount,
+                               'trx_hash' => $ress->txHash,
                                'type' => $type,
                                'token_name' => $chain->chain_name,
-                               'status' => $ress['status'],
+                               'status' => $ress->status,
                            ]);
                        }catch (\Exception $exception){
                            return response()->json([
