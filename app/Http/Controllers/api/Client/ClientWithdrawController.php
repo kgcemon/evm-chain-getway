@@ -23,7 +23,7 @@ class ClientWithdrawController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.00000001',
-            'chain_id' => 'required|exists:chain_lists,id',
+            'chain_id' => 'required',
             'token_id' => 'sometimes|nullable|exists:token_lists,id',
             'address' => 'required|string',
         ]);
