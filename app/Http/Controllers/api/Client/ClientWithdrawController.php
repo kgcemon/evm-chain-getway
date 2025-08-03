@@ -89,7 +89,7 @@ class ClientWithdrawController extends Controller
                     );
 
 
-                         $da =  Transactions::create([
+                         Transactions::create([
                                'user_id' => $user->id,
                                'chain_id' => $chain->id,
                                'amount' => $ress['amount'],
@@ -99,7 +99,7 @@ class ClientWithdrawController extends Controller
                                'status' => $ress['status'],
                            ]);
 
-                    return $da;
+                    return $ress;
                 }catch (\Exception $exception){
                     return response()->json([
                         'status' => false,
