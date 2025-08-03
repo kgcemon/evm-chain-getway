@@ -88,15 +88,16 @@ class ClientWithdrawController extends Controller
                         $validate['amount']
                     );
 
+                    $data = json_decode($ress,true);
 
                          $da =  Transactions::create([
                                'user_id' => $user->id,
                                'chain_id' => $chain->id,
-                               'amount' => $ress->amount,
-                               'trx_hash' => $ress->txHash,
+                               'amount' => $ress,
+                               'trx_hash' => $data->txHash,
                                'type' => $type,
                                'token_name' => $chain->chain_name,
-                               'status' => $ress->status,
+                               'status' => $data->status,
                            ]);
 
                     return $da;
