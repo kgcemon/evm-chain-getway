@@ -386,6 +386,7 @@ class TokenManage extends Crypto
             'message' => $message,
             'txHash' => $data['txHash'],
             'amount' => $data['amount'],
+
         ];
     }
 
