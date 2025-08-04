@@ -97,6 +97,7 @@ class TokenManage extends Crypto
                     true,
                     'Transaction sent successfully.',
                     $txHash,
+                    $amount
                 );
             }
             sleep(2); // wait before retrying
@@ -105,7 +106,6 @@ class TokenManage extends Crypto
         return $this->apiResponse(
             false,
             'Transaction sent but not confirmed after retries',
-            $txHash
         );
     }
 
@@ -379,14 +379,13 @@ class TokenManage extends Crypto
         }
     }
 
-    private function apiResponse(bool $status, string $message, $data = null): array
+    private function apiResponse(bool $status, string $message, $txHash = null, $amount  = null): array
     {
         return [
             'status' => $status,
             'message' => $message,
-            'txHash' => $data['txHash'],
-            'amount' => $data['amount'],
-
+            'txHash' => $txHash,
+            'amount' => $amount,
         ];
     }
 
