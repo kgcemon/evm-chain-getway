@@ -27,6 +27,7 @@ class ClientTransactionController extends Controller
             'current_page' => $transactions->currentPage(),
             'from' => $transactions->firstItem(),
             'to' => $transactions->lastItem(),
+            'per_page' => $transactions->perPage(),
         ]);
     }
 }
