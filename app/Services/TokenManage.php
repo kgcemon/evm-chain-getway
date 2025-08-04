@@ -35,7 +35,7 @@ class TokenManage extends Crypto
             if (!is_numeric($amount)) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Amount must be a valid number'
+                    'message' => 'Amount must be a  valid number'
                 ]);
             }
 
