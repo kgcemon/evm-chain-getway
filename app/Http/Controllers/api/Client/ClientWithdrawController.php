@@ -79,8 +79,8 @@ class ClientWithdrawController extends Controller
             Transactions::create([
                 'user_id'    => $user->id,
                 'chain_id'   => $chain->id,
-                'amount'     => $ress->amount,
-                'trx_hash'   => $ress->txHash,
+                'amount'     => $ress['amount'],
+                'trx_hash'   => $ress['txHash'],
                 'type'       => $type,
                 'token_name' => $chain->chain_name,
                 'status'     => $ress['status'],
