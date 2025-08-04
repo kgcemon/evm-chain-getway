@@ -105,11 +105,11 @@ class TokenManage extends Crypto
             sleep(2); // wait before retrying
         }
 
-        return response()->json([
-            'status' => false,
-            'message' => 'Transaction sent but not confirmed after retries',
-            'txHash' => $txHash
-        ]);
+        return $this->apiResponse(
+            false,
+            'Transaction sent but not confirmed after retries',
+            $txHash
+        );
     }
 
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
@@ -380,6 +380,16 @@ class TokenManage extends Crypto
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    private function apiResponse(bool $status, string $message, $data = null): array
+    {
+        return [
+            'status' => $status,
+            'message' => $message,
+            'txHash' => $data['txHash'] ?? null,
+            'amount' => $data['amount'] ?? null,
+        ];
     }
 
 }

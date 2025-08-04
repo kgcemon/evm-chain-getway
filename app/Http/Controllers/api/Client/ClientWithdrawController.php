@@ -79,11 +79,11 @@ class ClientWithdrawController extends Controller
             Transactions::create([
                 'user_id'    => $user->id,
                 'chain_id'   => $chain->id,
-                'amount'     => $type == 'native' ? $ress['amount'] : $ress->amount,
-                'trx_hash'   => $type == 'native' ?  $ress['txHash'] : $ress->txHash,
+                'amount'     => $ress->amount,
+                'trx_hash'   => $ress->txHash,
                 'type'       => $type,
-                'token_name' => $type == 'token' ? $token->token_name : $chain->chain_name,
-                'status'     => ($type == 'native' ? $ress['status'] : $ress->status) ? 1 : 0,
+                'token_name' => $chain->chain_name,
+                'status'     => $ress['status'],
             ]);
 
             return $ress;
