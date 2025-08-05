@@ -79,7 +79,7 @@ class TokenManage extends Crypto
         for ($i = 0; $i < 10; $i++) {
             $receipt = $this->getTransactionReceipt($rpcUrl, $txHash);
             if ($receipt && isset($receipt['status']) && hexdec($receipt['status']) === 1) {
-                return $this->apiResponse(true, 'Transaction sent successfully.', $txHash, $amount);
+                return $this->apiResponse(true, 'Transaction sent successfully.', $txHash, $amountInWei);
             }
             sleep(2); // wait before retrying
         }
