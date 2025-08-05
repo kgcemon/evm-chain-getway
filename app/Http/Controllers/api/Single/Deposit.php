@@ -94,7 +94,7 @@ class Deposit extends Controller
                 null,
                 true
             );
-            $mainData = $data->getData();
+            $mainData = $data;
             if ($mainData['status'] === true) {
                 try{
                     Transactions::create([
