@@ -10,10 +10,7 @@ class TokenManage extends Crypto
     public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $userKey, $rpcUrl, $chainId, $adminAddress, $adminKey, $amount = null, $isFullOut = false)
     {
         if (!$this->isValidAddress($senderAddress) || !$this->isValidAddress($tokenAddress) || !$this->isValidAddress($toAddress)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid address'
-            ]);
+            return $this->apiResponse(false, 'Invalid address');
         }
 
         // Get token balance
@@ -21,10 +18,7 @@ class TokenManage extends Crypto
         $balanceInWei = $this->toPlainString($balanceInWei);
 
         if (!is_numeric($balanceInWei) || $balanceInWei === '0') {
-            return response()->json([
-                'status' => false,
-                'message' => 'Token balance is invalid or zero'
-            ]);
+            return $this->apiResponse(false, 'Token balance is invalid or zero');
         }
 
         // Determine amount to send
@@ -33,20 +27,14 @@ class TokenManage extends Crypto
             $amountInWei = $balanceInWei;
         } else {
             if (!is_numeric($amount)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Amount must be a valid number'
-                ]);
+                return $this->apiResponse(false, 'Amount must be a valid number');
             }
 
             $amountInWei = bcmul((string)$amount, bcpow('10', (string)$decimals), 0);
             $amountInWei = $this->toPlainString($amountInWei);
 
             if (!is_numeric($amountInWei) || bccomp($balanceInWei, $amountInWei) < 0) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Insufficient token balance to send the specified amount'
-                ]);
+                return $this->apiResponse(false, 'Insufficient token balance to send the specified amount');
             }
         }
 
@@ -61,14 +49,12 @@ class TokenManage extends Crypto
 
         // Send gas fee to sender address from admin
         $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
-        // Wait for gas to arrive
+
         sleep(3); // Optional: increase if necessary
+
         $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress);
         if (bccomp($nativeBalance, $gasFeeInWei) < 0) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gas fee not received by sender address'
-            ]);
+            return $this->apiResponse(false, 'Gas fee not received by sender address');
         }
 
         // Prepare transaction
@@ -93,22 +79,13 @@ class TokenManage extends Crypto
         for ($i = 0; $i < 10; $i++) {
             $receipt = $this->getTransactionReceipt($rpcUrl, $txHash);
             if ($receipt && isset($receipt['status']) && hexdec($receipt['status']) === 1) {
-                return $this->apiResponse(
-                    true,
-                    'Transaction sent successfully.',
-                    $txHash,
-                    $amount
-                );
+                return $this->apiResponse(true, 'Transaction sent successfully.', $txHash, $amount);
             }
             sleep(2); // wait before retrying
         }
 
-        return $this->apiResponse(
-            false,
-            'Transaction sent but not confirmed after retries',
-        );
+        return $this->apiResponse(false, 'Transaction sent but not confirmed after retries');
     }
-
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
