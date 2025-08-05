@@ -82,7 +82,7 @@ class ClientWithdrawController extends Controller
                 'amount'     => $ress['amount'],
                 'trx_hash'   => $ress['txHash'],
                 'type'       => $type,
-                'token_name' => $chain->chain_name,
+                'token_name' => $type == 'native' ? $chain->chain_name : $token->token_name,
                 'status'     => $ress['status'],
             ]);
 
