@@ -96,19 +96,19 @@ class Deposit extends Controller
             );
             $mainData = $data;
             if ($mainData['status'] === true) {
-                try{
-                    Transactions::create([
-                        'user_id' => $user->id,
-                        'chain_id' => $chainData->id,
-                        'amount' => $mainData['amount'],
-                        'trx_hash' => $mainData['txHash'],
-                        'type' => $validatedData['type'],
-                        'token_name' => $tokenContractAddress,
-                        'status' => $mainData['status'],
-                    ]);
-                }catch (\Exception $exception){
-                    return  $exception->getMessage();
-                }
+//                try{
+//                    Transactions::create([
+//                        'user_id' => $user->id,
+//                        'chain_id' => $chainData->id,
+//                        'amount' => $mainData['amount'],
+//                        'trx_hash' => $mainData['txHash'],
+//                        'type' => $validatedData['type'],
+//                        'token_name' => $tokenContractAddress,
+//                        'status' => $mainData['status'],
+//                    ]);
+//                }catch (\Exception $exception){
+//                    return  $exception->getMessage();
+//                }
                 return  $mainData;
             }else{
                 return response()->json([
