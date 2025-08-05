@@ -75,7 +75,7 @@ class Deposit extends Controller
                         'amount' => $res['amount'],
                         'trx_hash' => $res['txHash'],
                         'type' => $validatedData['type'],
-                        'token_name' => $chainData->chain_name,
+                        'token_name' => $chainData->chain_name ?? 'unknown',
                         'status' => $res['status'],
                     ]);
                 }catch (\Exception $exception){
