@@ -4,6 +4,8 @@ namespace App\Http\Controllers\api\Single;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PayOutRequest;
+use App\Models\ChainList;
+use App\Models\TokenList;
 use App\Models\Transactions;
 use App\Models\User;
 use App\Services\NativeCoin;
@@ -39,6 +41,14 @@ class Withdrawal extends Controller
         $chainId = $validatedData['chain_id'];
         $amount = $validatedData['amount'];
 
+        $token = TokenList::where('contract_address', $tokenContractAddress)->first();
+        $chain = ChainList::where('chain_id', $chainId)->first();
+        if (!$token || !$chain) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Token not found or API access denied.'
+            ]);
+        }
         switch ($validatedData['type']) {
             case 'token':
                 $res = $this->tokenManage->sendAnyChainTokenTransaction(
@@ -60,7 +70,7 @@ class Withdrawal extends Controller
                         'amount' => $res['amount'],
                         'trx_hash' => $res['txHash'],
                         'type' => $validatedData['type'],
-                        'token_name' => $tokenContractAddress,
+                        'token_name' => $token->token_name ?? 'unknown',
                         'status' => $res['status'],
                     ]);
                 }catch (\Exception $exception){
@@ -87,7 +97,7 @@ class Withdrawal extends Controller
                                'amount' => $res['amount'],
                                'trx_hash' => $res['txHash'],
                                'type' => $validatedData->type,
-                               'token_name' => $tokenContractAddress,
+                               'token_name' => $chain->chain_name ?? 'unknown',
                                'status' => $res['status'],
                            ]);
                        }catch (\Exception $exception){
