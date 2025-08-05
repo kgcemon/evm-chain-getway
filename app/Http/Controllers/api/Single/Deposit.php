@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\Single;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChainList;
+use App\Models\TokenList;
 use App\Models\Transactions;
 use App\Models\User;
 use App\Services\NativeCoin;
@@ -74,7 +75,7 @@ class Deposit extends Controller
                         'amount' => $res['amount'],
                         'trx_hash' => $res['txHash'],
                         'type' => $validatedData['type'],
-                        'token_name' => $tokenContractAddress,
+                        'token_name' => $chainData->chain_name,
                         'status' => $res['status'],
                     ]);
                 }catch (\Exception $exception){
@@ -82,6 +83,7 @@ class Deposit extends Controller
             }
            return $res;
         }elseif ($validatedData['type'] == 'token') {
+            $token = TokenList::where('contract_address', $tokenContractAddress)->first();
             $data = $this->tokenManage->sendAnyChainTokenTransaction(
                 "$to",
                 "$tokenContractAddress",
@@ -103,7 +105,7 @@ class Deposit extends Controller
                         'amount' => $mainData['amount'],
                         'trx_hash' => $mainData['txHash'],
                         'type' => $validatedData['type'],
-                        'token_name' => $tokenContractAddress,
+                        'token_name' => $token->token_name ?? 'Unknown',
                         'status' => $mainData['status'],
                     ]);
                 }catch (\Exception $exception){
