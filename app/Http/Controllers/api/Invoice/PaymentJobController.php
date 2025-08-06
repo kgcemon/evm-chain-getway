@@ -164,14 +164,12 @@ class PaymentJobController extends Controller
                     'status'     => 'completed',
                     'invoice_id' => $rpc->invoice_id,
                     'amount'     => $balance,
-                    'txHash'     => random_int(1000, 9999),
+                    'txHash'     => 'check-in-scan',
                 ]);
-            }catch (\Exception $e){
-
-            }
+            }catch (\Exception $e){}
             return response()->json([
                 'status' => true,
-                'payment_status' => $rpc->status,
+                'payment_status' => 'completed',
                 'message' => 'New transaction detected!',
                 'balance' => $balance,
             ]);
