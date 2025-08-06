@@ -64,7 +64,7 @@ class UserAuthController extends Controller
                 $res = Http::get('http://ip-api.com/json/118.179.177.97');
                 $data = $res->json();
                 if($res['status']){
-                    $user->last_login_data = $data['country'] .'\n'. $data['city'] .'\n'. $data['regionName'] .'\n'. $data['country'] .'\n'. $data['as'];
+                    $user->last_login_data = $data['country'] .' '. $data['city'] .' '. $data['regionName'] .' '. $data['country'] .' '. $data['as'];
                     $user->save();
                 }
 
