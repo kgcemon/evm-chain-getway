@@ -62,7 +62,7 @@ class UserAuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
 
             try {
-              $res =  Http::get('http://ip-api.com/json/118.179.177.97');
+              $res =  Http::get('https://ipwho.is/'+$request->getClientIp());
                 $user->last_login_data = $res;
                 $user->save();
             }catch (\Exception $exception){}
