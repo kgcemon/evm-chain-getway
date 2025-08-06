@@ -24,16 +24,16 @@ class ClientWalletBalanceController extends Controller
         $cacheKey = 'balance_list_' . $user->id;
 
         $cachedData = Cache::get($cacheKey);
-//        if ($cachedData) {
-//            return response()->json([
-//                'success' => true,
-//                'data' => $cachedData,
-//                'cached' => true
-//            ]);
-//        }
+        if ($cachedData) {
+            return response()->json([
+                'success' => true,
+                'data' => $cachedData,
+                'cached' => true
+            ]);
+        }
 
-//        $allChain = ChainList::with('token')->get();
-//        $list = [];
+        $allChain = ChainList::with('token')->get();
+        $list = [];
 
         try {
             foreach ($allChain as $chain) {
