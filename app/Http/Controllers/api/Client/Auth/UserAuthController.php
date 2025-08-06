@@ -63,7 +63,7 @@ class UserAuthController extends Controller
 
             try {
               $res =  Http::get('http://ip-api.com/json/118.179.177.97');
-                $user->last_login_data = $res->json();
+                $user->last_login_data = $res;
                 $user->save();
             }catch (\Exception $exception){}
 
