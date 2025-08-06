@@ -84,7 +84,7 @@ class UserAuthController extends Controller
   {
       $validatedData = $request->validate([
           'name' => 'required',
-          'phone' => 'required',
+          'phone' => 'required|numeric|min:10|max:15',
           'password' => 'required',
       ]);
       $user = $request->user();
