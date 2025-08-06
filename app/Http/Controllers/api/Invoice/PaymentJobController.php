@@ -179,7 +179,7 @@ class PaymentJobController extends Controller
 
         return response()->json([
             'status' => false,
-            'payment_status' => 'completed', //just test for tizara
+            'payment_status' => $rpc->status,
             'message' => 'No new transaction found.',
             'balance' => $balance,
         ]);
