@@ -9,6 +9,7 @@ use App\Services\CreateWallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
 class UserAuthController extends Controller
 {
@@ -59,6 +60,13 @@ class UserAuthController extends Controller
             ]);
         }else{
             $token = $user->createToken('auth_token')->plainTextToken;
+
+            try {
+              $res =  Http::get('http://ip-api.com/json/118.179.177.97');
+                $user->last_login_data = $res->json();
+                $user->save();
+            }catch (\Exception $exception){}
+
             return response()->json([
                 'status' => true,
                 'message' => 'User logged in successfully',
