@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChainList;
 use App\Services\CheckBalance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ClientWalletBalanceController extends Controller
 {
@@ -14,17 +15,29 @@ class ClientWalletBalanceController extends Controller
         $this->checkBalance = $checkBalance;
     }
 
+
     public function balanceList(Request $request)
     {
         $user = $request->user();
         $wallet = $user->wallet_address;
+
+        $cacheKey = 'balance_list_' . $user->id;
+
+        $cachedData = Cache::get($cacheKey);
+        if ($cachedData) {
+            return response()->json([
+                'success' => true,
+                'data' => $cachedData,
+                'cached' => true
+            ]);
+        }
 
         $allChain = ChainList::with('token')->get();
         $list = [];
 
         try {
             foreach ($allChain as $chain) {
-                $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet, 'native');
+                $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet);
 
                 $tokenBalances = [];
                 foreach ($chain->token as $token) {
@@ -57,6 +70,8 @@ class ClientWalletBalanceController extends Controller
                     ];
                 }
             }
+
+            Cache::put($cacheKey, $list, now()->addSeconds(60));
 
             return response()->json([
                 'success' => true,
