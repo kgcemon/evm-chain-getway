@@ -59,9 +59,10 @@ class UserAuthController extends Controller
                 'message' => 'The provided credentials are incorrect.',
             ]);
         }else{
+            $ip = $request->getClientIp();
             $token = $user->createToken('auth_token')->plainTextToken;
             try {
-                $res = Http::get('http://ip-api.com/json/118.179.177.97');
+                $res = Http::get('http://ip-api.com/json/'.+$ip);
                 $data = $res->json();
                 if($res['status']){
                     $user->last_login_data = $data['country'] .' '.$data['regionName'] . ' ' . $data['city'] . ' ' . $data['as'];
