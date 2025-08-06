@@ -10,6 +10,7 @@ use App\Models\Transactions;
 use App\Models\User;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
+use Illuminate\Support\Facades\Cache;
 
 class Withdrawal extends Controller
 {
@@ -90,6 +91,7 @@ class Withdrawal extends Controller
                         $amount
                     );
                    if ($res['status']) {
+                       Cache::forget('balance_list_' . $user->id);
                        try {
                            Transactions::create([
                                'user_id' => $user->id,

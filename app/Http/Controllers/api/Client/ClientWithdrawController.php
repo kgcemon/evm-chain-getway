@@ -8,6 +8,7 @@ use App\Models\Transactions;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 
 class ClientWithdrawController extends Controller
@@ -75,7 +76,7 @@ class ClientWithdrawController extends Controller
                     $validated['amount']
                 );
             }
-
+            Cache::forget('balance_list_' . $user->id);
             Transactions::create([
                 'user_id'    => $user->id,
                 'chain_id'   => $chain->id,
