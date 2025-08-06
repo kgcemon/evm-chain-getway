@@ -79,4 +79,25 @@ class UserAuthController extends Controller
             ],
         ]);
     }
+
+  public function updateProfile(Request $request):JsonResponse
+  {
+      $validatedData = $request->validate([
+          'name' => 'required',
+          'phone' => 'required',
+          'password' => 'required',
+      ]);
+      $user = $request->user();
+      $user->name = $validatedData['name'];
+      $user->phone = $validatedData['phone'];
+      $user->password = bcrypt($validatedData['password']);
+      $user->save();
+      return response()->json([
+          'success' => true,
+          'data' => [
+              'user' => $user,
+              'message' => 'Profile updated successfully.',
+          ]
+      ]);
+  }
 }

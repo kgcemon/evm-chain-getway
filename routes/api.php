@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('my-balance',[ClientWalletBalanceController::class,'balanceList']);
     Route::get('/user',[UserAuthController::class,'profile']);
+    Route::get('/user-update',[UserAuthController::class,'updateProfile']);
     Route::post('/withdraw',[ClientWithdrawController::class,'withdraw']);
     Route::get('transactions',[ClientTransactionController::class,'index']);
 });
