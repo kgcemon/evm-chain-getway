@@ -125,7 +125,7 @@ class TokenManage extends Crypto
         $signedTx = $tx->sign($adminKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        $this->waitForTransaction($rpcUrl, $txHash);
+        //$this->waitForTransaction($rpcUrl, $txHash);
 
         return $txHash;
     }
@@ -232,7 +232,6 @@ class TokenManage extends Crypto
                     if ($response['result'] !== null) {
                         $status = $response['result']['status'] ?? null;
                         if ($status === '0x1') {
-
                             return true;
                         } elseif ($status === '0x0') {
                             throw new \Exception("Transaction failed: $txHash");
