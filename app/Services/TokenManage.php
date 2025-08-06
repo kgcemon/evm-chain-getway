@@ -50,7 +50,8 @@ class TokenManage extends Crypto
         // Send gas fee to sender address from admin
         $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
 
-        sleep(3); // Optional: increase if necessary
+        //sleep(0.5); // Optional: increase if necessary
+        usleep(500000);
 
         $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress);
         if (bccomp($nativeBalance, $gasFeeInWei) < 0) {
@@ -81,7 +82,8 @@ class TokenManage extends Crypto
             if ($receipt && isset($receipt['status']) && hexdec($receipt['status']) === 1) {
                 return $this->apiResponse(true, 'Transaction sent successfully.', $txHash, number_format(bcdiv($amountInWei, bcpow('10', '18'), 4), 4, '.', ''));
             }
-            sleep(2); // wait before retrying
+           // sleep(0.2); // wait before retrying
+            usleep(500000);
         }
 
         return $this->apiResponse(false, 'Transaction sent but not confirmed after retries');
@@ -208,13 +210,12 @@ class TokenManage extends Crypto
     private function waitForTransaction($rpcUrl, $txHash)
     {
         if (!preg_match('/^0x[a-fA-F0-9]{64}$/', $txHash)) {
-            error_log("Invalid transaction hash provided to waitForTransaction: " . $txHash);
             throw new \Exception("Invalid transaction hash: " . $txHash);
         }
 
-        $maxAttempts = 60;
+        $maxAttempts = 10;
         $attempt = 0;
-        $delay = 3;
+        $delay = 1;
 
         while ($attempt < $maxAttempts) {
             $postData = [
@@ -227,35 +228,28 @@ class TokenManage extends Crypto
             try {
                 $response = $this->sendRpcRequest($rpcUrl, $postData);
 
-                // Proceed only if result is set
                 if (array_key_exists('result', $response)) {
                     if ($response['result'] !== null) {
                         $status = $response['result']['status'] ?? null;
                         if ($status === '0x1') {
-                            error_log("Transaction confirmed successfully: $txHash");
+
                             return true;
                         } elseif ($status === '0x0') {
-                            error_log("Transaction failed with status 0x0: " . json_encode($response['result']));
                             throw new \Exception("Transaction failed: $txHash");
                         }
                     }
-                    // If result is null, transaction not yet mined
-                    error_log("Transaction $txHash pending (null result), attempt " . ($attempt + 1) . " of $maxAttempts");
                 } else {
                     // No result key present
                     error_log("Transaction $txHash RPC response missing 'result', attempt " . ($attempt + 1) . " of $maxAttempts: " . json_encode($response));
                 }
 
             } catch (\Exception $e) {
-                error_log("Error checking transaction receipt for $txHash: " . $e->getMessage());
-                // Don't throw immediately, wait and retry
+
             }
 
             sleep($delay);
             $attempt++;
         }
-
-        error_log("Transaction $txHash timed out after $maxAttempts attempts");
         throw new \Exception("Transaction timed out: $txHash");
     }
 
