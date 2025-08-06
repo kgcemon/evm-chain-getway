@@ -62,7 +62,7 @@ class UserAuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
 
             try {
-              $res =  Http::get('https://ipwho.is/'+$request->getClientIp());
+              $res =  Http::get('https://ipwho.is/118.179.177.97');
                 $user->last_login_data = $res;
                 $user->save();
             }catch (\Exception $exception){}
@@ -92,13 +92,15 @@ class UserAuthController extends Controller
   {
       $validatedData = $request->validate([
           'name' => 'required',
-          'phone' => 'required|numeric|min:10|max:15',
-          'password' => 'required',
+          'phone' => 'required',
+          'password' => 'sometimes',
       ]);
       $user = $request->user();
       $user->name = $validatedData['name'];
       $user->phone = $validatedData['phone'];
-      $user->password = bcrypt($validatedData['password']);
+      if(!empty($validatedData['password'])){
+          $user->password = bcrypt($validatedData['password']);
+      }
       $user->save();
       return response()->json([
           'success' => true,
