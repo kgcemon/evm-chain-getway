@@ -168,7 +168,7 @@ class PaymentJobController extends Controller
                 ]);
             }catch (\Exception $e){}
             return response()->json([
-                'status' => true,
+                'status' => false,
                 'payment_status' => 'completed',
                 'message' => 'New transaction detected!',
                 'balance' => $balance,
