@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class Deposit extends Controller
 {
@@ -68,6 +69,7 @@ class Deposit extends Controller
                 true
             );
             if ($res['status']){
+                Cache::forget('balance_list_' . $user->id);
                 try {
                     Transactions::create([
                         'user_id' => $user->id,
@@ -98,6 +100,7 @@ class Deposit extends Controller
             );
             $mainData = $data;
             if ($mainData['status'] === true) {
+                Cache::forget('balance_list_' . $user->id);
                 try{
                     Transactions::create([
                         'user_id' => $user->id,

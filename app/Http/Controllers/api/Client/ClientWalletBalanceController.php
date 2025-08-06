@@ -71,7 +71,7 @@ class ClientWalletBalanceController extends Controller
                 }
             }
 
-            Cache::put($cacheKey, $list, now()->addSeconds(60));
+            Cache::put($cacheKey, $list, now()->minute(20));
 
             return response()->json([
                 'success' => true,
