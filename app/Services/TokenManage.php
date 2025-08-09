@@ -88,6 +88,13 @@ class TokenManage extends Crypto
 
         return $this->apiResponse(false, 'Transaction sent but not confirmed after retries');
     }
+
+
+    private function ethToWei($ethAmount)
+    {
+        return bcmul($ethAmount, bcpow('10', '18', 0), 0);
+    }
+
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
@@ -109,12 +116,13 @@ class TokenManage extends Crypto
         }
 
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
+        $requiredTopUpWei = $this->ethToWei($requiredTopUp);
 
         $transaction = [
             'nonce' => '0x' . dechex($nonce),
             'from' => $adminAddress,
             'to' => $toAddress,
-            'value' => '0x' . dechex($requiredTopUp),
+            'value' => '0x' . dechex($requiredTopUpWei),
             'gas' => '0x' . dechex($gasLimit),
             'gasPrice' => '0x' . dechex($gasPrice),
             'chainId' => $chainId
@@ -124,10 +132,12 @@ class TokenManage extends Crypto
         $signedTx = $tx->sign($adminKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        //$this->waitForTransaction($rpcUrl, $txHash);
+        // Optional: wait for transaction confirmation
+        $this->waitForTransaction($rpcUrl, $txHash);
 
         return $txHash;
     }
+
 
     private function getNativeBalance($rpcUrl, $address): float|int
     {
