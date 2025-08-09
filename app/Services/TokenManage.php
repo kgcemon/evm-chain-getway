@@ -128,7 +128,7 @@ class TokenManage extends Crypto
              'nonce' => '0x' . dechex($nonce),
              'from' => $adminAddress,
              'to' => $toAddress,
-             'value' => '0x' . dechex($requiredTopUpWei),
+             'value' => '0x' . dechex($requiredTopUp),
              'gas' => '0x' . dechex($gasLimit),
              'gasPrice' => '0x' . dechex($gasPrice),
              'chainId' => $chainId
