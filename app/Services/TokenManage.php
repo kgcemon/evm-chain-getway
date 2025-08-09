@@ -121,7 +121,7 @@ class TokenManage extends Crypto
         }
 
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
-        $requiredTopUpWei = $this->ethToWei($requiredTopUp);
+        $requiredTopUpWei = (int) $this->ethToWei($requiredTopUp);
 
      if($nonce !=null){
          $transaction = [
