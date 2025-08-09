@@ -109,7 +109,6 @@ class TokenManage extends Crypto
         }
 
         $nonce = (int)$this->getNonce($rpcUrl, $adminAddress);
-        dd($nonce);
         $gasLimit = 80000;
         $gasPrice = 1000000000;
 
@@ -123,15 +122,22 @@ class TokenManage extends Crypto
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
         $requiredTopUpWei = $this->ethToWei($requiredTopUp);
 
-        $transaction = [
-            'nonce' => '0x' . dechex($nonce),
-            'from' => $adminAddress,
-            'to' => $toAddress,
-            'value' => '0x' . dechex($requiredTopUpWei),
-            'gas' => '0x' . dechex($gasLimit),
-            'gasPrice' => '0x' . dechex($gasPrice),
-            'chainId' => $chainId
-        ];
+     if($nonce !=null){
+         $transaction = [
+             'nonce' => '0x' . dechex($nonce),
+             'from' => $adminAddress,
+             'to' => $toAddress,
+             'value' => '0x' . dechex($requiredTopUpWei),
+             'gas' => '0x' . dechex($gasLimit),
+             'gasPrice' => '0x' . dechex($gasPrice),
+             'chainId' => $chainId
+         ];
+     }else{
+         return response()->json([
+             'status' => false,
+             'message' => 'Invalid nonce'
+         ]);
+     }
 
         $tx = new Transaction($transaction);
         $signedTx = $tx->sign($adminKey);
