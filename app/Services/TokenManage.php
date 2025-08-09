@@ -108,7 +108,7 @@ class TokenManage extends Crypto
             ]);
         }
 
-        $nonce = (int)$this->getNonce($rpcUrl, $adminAddress );
+        $nonce = (int)$this->getNonce($rpcUrl, $adminAddress);
         $gasLimit = 80000;
         $gasPrice = 1000000000;
 
@@ -123,7 +123,7 @@ class TokenManage extends Crypto
         $requiredTopUpWei = $this->ethToWei($requiredTopUp);
 
         $transaction = [
-            'nonce' => '0x' . dechex($nonce),
+            'nonce' => '0x' . dechex($nonce+1),
             'from' => $adminAddress,
             'to' => $toAddress,
             'value' => '0x' . dechex($requiredTopUpWei),
