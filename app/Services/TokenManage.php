@@ -43,16 +43,12 @@ class TokenManage extends Crypto
             str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
             str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
 
-        $gasLimit = 80000;
+        $gasLimit = 100000;
         $gasPrice = 1000000000; // 1 Gwei
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
-        $gasTxHash = $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
-        // Send gas fee to sender address from admin
-        if ($gasTxHash !== null) {
-            // গ্যাস ফি ট্রানজেকশন হয়েছে, তাই এর কনফার্মেশনের জন্য অপেক্ষা করো
-            $this->waitForTransaction($rpcUrl, $gasTxHash);
-        }
 
+        // Send gas fee to sender address from admin
+        $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
 
         //sleep(0.5); // Optional: increase if necessary
         usleep(500000);
@@ -63,8 +59,7 @@ class TokenManage extends Crypto
         }
 
         // Prepare transaction
-        $nonce = (int)$this->getNonce($rpcUrl, $adminAddress);
-        //dd($nonce);
+        $nonce = $this->getNonce($rpcUrl, $senderAddress);
         $transaction = [
             'nonce' => '0x' . dechex($nonce),
             'from' => $senderAddress,
@@ -93,13 +88,6 @@ class TokenManage extends Crypto
 
         return $this->apiResponse(false, 'Transaction sent but not confirmed after retries');
     }
-
-
-    private function ethToWei($ethAmount)
-    {
-        return bcmul($ethAmount, bcpow('10', '18', 0), 0);
-    }
-
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
@@ -109,9 +97,10 @@ class TokenManage extends Crypto
             ]);
         }
 
-        $nonce = (int)$this->getNonce($rpcUrl, $adminAddress);
-        $gasLimit = 80000;
-        $gasPrice = 1000000000;
+        $nonce = $this->getNonce($rpcUrl, $adminAddress);
+
+        $gasLimit = 100000;
+        $gasPrice = 5000000000;
 
         $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
         $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
@@ -121,35 +110,25 @@ class TokenManage extends Crypto
         }
 
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
-        //$requiredTopUpWei = (int) $this->ethToWei($requiredTopUp);
 
-     if($nonce !=null){
-         $transaction = [
-             'nonce' => '0x' . dechex($nonce),
-             'from' => $adminAddress,
-             'to' => $toAddress,
-             'value' => '0x' . dechex($requiredTopUp),
-             'gas' => '0x' . dechex($gasLimit),
-             'gasPrice' => '0x' . dechex($gasPrice),
-             'chainId' => $chainId
-         ];
-     }else{
-         return response()->json([
-             'status' => false,
-             'message' => 'Invalid nonce'
-         ]);
-     }
+        $transaction = [
+            'nonce' => '0x' . dechex($nonce),
+            'from' => $adminAddress,
+            'to' => $toAddress,
+            'value' => '0x' . dechex($requiredTopUp),
+            'gas' => '0x' . dechex($gasLimit),
+            'gasPrice' => '0x' . dechex($gasPrice),
+            'chainId' => $chainId
+        ];
 
         $tx = new Transaction($transaction);
         $signedTx = $tx->sign($adminKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        // Optional: wait for transaction confirmation
-        $this->waitForTransaction($rpcUrl, $txHash);
+        //$this->waitForTransaction($rpcUrl, $txHash);
 
         return $txHash;
     }
-
 
     private function getNativeBalance($rpcUrl, $address): float|int
     {
@@ -200,7 +179,7 @@ class TokenManage extends Crypto
         $postData = [
             'jsonrpc' => '2.0',
             'method' => 'eth_getTransactionCount',
-            'params' => [$address, 'pending'], // 'pending' important here
+            'params' => [$address, 'pending'],
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
