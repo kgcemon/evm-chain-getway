@@ -65,7 +65,7 @@ class TokenManage extends Crypto
         // Prepare transaction
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
         $transaction = [
-            'nonce' => '0x' . dechex($nonce),
+            'nonce' => '0x' . dechex(6),
             'from' => $senderAddress,
             'to' => $tokenAddress,
             'value' => '0x0',
