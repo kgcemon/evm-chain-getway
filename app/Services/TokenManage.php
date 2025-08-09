@@ -1,12 +1,12 @@
 <?php
 
 namespace App\Services;
-
 use App\Exceptions\RpcException;
 use Web3p\EthereumTx\Transaction;
 
 class TokenManage extends Crypto
 {
+
     public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $userKey, $rpcUrl, $chainId, $adminAddress, $adminKey, $amount = null, $isFullOut = false)
     {
         if (!$this->isValidAddress($senderAddress) || !$this->isValidAddress($tokenAddress) || !$this->isValidAddress($toAddress)) {
@@ -21,6 +21,7 @@ class TokenManage extends Crypto
             return $this->apiResponse(false, 'Token balance is invalid or zero');
         }
 
+        // Determine amount to send
         $decimals = 18;
         if ($isFullOut && $amount === null) {
             $amountInWei = $balanceInWei;
@@ -28,6 +29,7 @@ class TokenManage extends Crypto
             if (!is_numeric($amount)) {
                 return $this->apiResponse(false, 'Amount must be a valid number');
             }
+
             $amountInWei = bcmul((string)$amount, bcpow('10', (string)$decimals), 0);
             $amountInWei = $this->toPlainString($amountInWei);
 
@@ -36,20 +38,19 @@ class TokenManage extends Crypto
             }
         }
 
-        // Gas limit fixed to 60000
-        $gasLimit = 60000;
+        // Prepare data for token transfer
+        $data = '0xa9059cbb' .
+            str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
+            str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
 
-        // Get current gas price from network but cap max at 1 Gwei (1_000_000_000 wei)
-        $networkGasPrice = $this->getGasPrice($rpcUrl);
-        $maxGasPrice = 1000000000; // 1 Gwei
-
-        $gasPrice = ($networkGasPrice > $maxGasPrice) ? $maxGasPrice : $networkGasPrice;
-
+        $gasLimit = 100000;
+        $gasPrice = 1000000000; // 1 Gwei
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
 
-        // Send gas fee to sender address from admin if needed
+        // Send gas fee to sender address from admin
         $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
 
+        //sleep(0.5); // Optional: increase if necessary
         usleep(500000);
 
         $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress);
@@ -57,40 +58,36 @@ class TokenManage extends Crypto
             return $this->apiResponse(false, 'Gas fee not received by sender address');
         }
 
-        // Prepare token transfer data
-        $data = '0xa9059cbb' .
-            str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
-            str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
-
+        // Prepare transaction
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
-        $nonceHex = $this->decToHex($nonce);
-
         $transaction = [
-            'nonce' => '0x' . $nonceHex,
+            'nonce' => '0x' . dechex($nonce),
             'from' => $senderAddress,
             'to' => $tokenAddress,
             'value' => '0x0',
-            'gas' => '0x' . $this->decToHex((string)$gasLimit),
-            'gasPrice' => '0x' . $this->decToHex((string)$gasPrice),
+            'gas' => '0x' . dechex($gasLimit),
+            'gasPrice' => '0x' . dechex($gasPrice),
             'data' => $data,
             'chainId' => $chainId,
         ];
 
+        // Sign and send
         $tx = new Transaction($transaction);
         $signedTx = $tx->sign($userKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
+        // Confirm transaction success via receipt
         for ($i = 0; $i < 10; $i++) {
             $receipt = $this->getTransactionReceipt($rpcUrl, $txHash);
             if ($receipt && isset($receipt['status']) && hexdec($receipt['status']) === 1) {
                 return $this->apiResponse(true, 'Transaction sent successfully.', $txHash, number_format(bcdiv($amountInWei, bcpow('10', '18'), 4), 4, '.', ''));
             }
+           // sleep(0.2); // wait before retrying
             usleep(500000);
         }
 
         return $this->apiResponse(false, 'Transaction sent but not confirmed after retries');
     }
-
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
@@ -101,30 +98,26 @@ class TokenManage extends Crypto
         }
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
-        $nonceHex = $this->decToHex($nonce);
 
-        // Fixed gas limit 60000 and gas price capped at 1 Gwei
-        $gasLimit = 60000;
-        $maxGasPrice = 1000000000; // 1 Gwei
-        $networkGasPrice = $this->getGasPrice($rpcUrl);
-        $gasPrice = ($networkGasPrice > $maxGasPrice) ? $maxGasPrice : $networkGasPrice;
+        $gasLimit = 100000;
+        $gasPrice = 5000000000;
 
         $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
-        $totalNeeded = $this->toPlainString($estimatedGasFee);
+        $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
 
         if (bccomp($currentBalance, $totalNeeded) >= 0) {
-            return null; // no need to top up
+            return null;
         }
 
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
 
         $transaction = [
-            'nonce' => '0x' . $nonceHex,
+            'nonce' => '0x' . dechex($nonce),
             'from' => $adminAddress,
             'to' => $toAddress,
-            'value' => '0x' . $this->decToHex($requiredTopUp),
-            'gas' => '0x' . $this->decToHex((string)$gasLimit),
-            'gasPrice' => '0x' . $this->decToHex((string)$gasPrice),
+            'value' => '0x' . dechex($requiredTopUp),
+            'gas' => '0x' . dechex($gasLimit),
+            'gasPrice' => '0x' . dechex($gasPrice),
             'chainId' => $chainId
         ];
 
@@ -132,22 +125,12 @@ class TokenManage extends Crypto
         $signedTx = $tx->sign($adminKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
+        //$this->waitForTransaction($rpcUrl, $txHash);
+
         return $txHash;
     }
 
-    private function getGasPrice($rpcUrl)
-    {
-        $postData = [
-            'jsonrpc' => '2.0',
-            'method' => 'eth_gasPrice',
-            'params' => [],
-            'id' => 1
-        ];
-        $response = $this->sendRpcRequest($rpcUrl, $postData);
-        return $this->hexToDec($this->removeHexPrefix($response['result']));
-    }
-
-    private function getNativeBalance($rpcUrl, $address): string
+    private function getNativeBalance($rpcUrl, $address): float|int
     {
         $postData = [
             'jsonrpc' => '2.0',
@@ -156,7 +139,7 @@ class TokenManage extends Crypto
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
-        return $this->hexToDec($this->removeHexPrefix($response['result']));
+        return hexdec($this->removeHexPrefix($response['result']));
     }
 
     private function getTokenBalance($rpcUrl, $address, $tokenAddress)
@@ -176,7 +159,7 @@ class TokenManage extends Crypto
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
 
-        return $this->hexToDec($this->removeHexPrefix($response['result']));
+        return hexdec($this->removeHexPrefix($response['result']));
     }
 
     private function toPlainString($number)
@@ -190,18 +173,19 @@ class TokenManage extends Crypto
         return (string) $number;
     }
 
-    private function getNonce($rpcUrl, $address): string
+
+    private function getNonce($rpcUrl, $address)
     {
         $postData = [
             'jsonrpc' => '2.0',
             'method' => 'eth_getTransactionCount',
-            'params' => [$address, 'pending'],  // অবশ্যই 'pending' ব্যবহার করবেন
+            'params' => [$address, 'pending'],
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
-
-        return $this->hexToDec($this->removeHexPrefix($response['result']));
+        return hexdec($response['result']);
     }
+
 
     private function sendRawTransaction($rpcUrl, $signedTx)
     {
@@ -214,6 +198,7 @@ class TokenManage extends Crypto
         $response = $this->sendRpcRequest($rpcUrl, $postData);
         $txHash = $response['result'];
 
+        // Validate transaction hash format
         if (!preg_match('/^0x[a-fA-F0-9]{64}$/', $txHash)) {
             error_log("Invalid transaction hash returned: " . $txHash);
             throw new \Exception("Invalid transaction hash returned: " . $txHash);
@@ -222,83 +207,51 @@ class TokenManage extends Crypto
         return $txHash;
     }
 
-    public function getTransactionReceipt($rpcUrl, $txHash)
+    private function waitForTransaction($rpcUrl, $txHash)
     {
-        try {
-            $client = new \GuzzleHttp\Client();
-            $response = $client->post($rpcUrl, [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method'  => 'eth_getTransactionReceipt',
-                    'params'  => [$txHash],
-                    'id'      => 1,
-                ],
-                'timeout' => 10,
-            ]);
+        if (!preg_match('/^0x[a-fA-F0-9]{64}$/', $txHash)) {
+            throw new \Exception("Invalid transaction hash: " . $txHash);
+        }
 
-            $result = json_decode($response->getBody()->getContents(), true);
+        $maxAttempts = 10;
+        $attempt = 0;
+        $delay = 1;
 
-            if (isset($result['result']) && $result['result']) {
-                return $result['result'];
+        while ($attempt < $maxAttempts) {
+            $postData = [
+                'jsonrpc' => '2.0',
+                'method' => 'eth_getTransactionReceipt',
+                'params' => [$txHash],
+                'id' => 1
+            ];
+
+            try {
+                $response = $this->sendRpcRequest($rpcUrl, $postData);
+
+                if (array_key_exists('result', $response)) {
+                    if ($response['result'] !== null) {
+                        $status = $response['result']['status'] ?? null;
+                        if ($status === '0x1') {
+                            return true;
+                        } elseif ($status === '0x0') {
+                            throw new \Exception("Transaction failed: $txHash");
+                        }
+                    }
+                } else {
+                    // No result key present
+                    error_log("Transaction $txHash RPC response missing 'result', attempt " . ($attempt + 1) . " of $maxAttempts: " . json_encode($response));
+                }
+
+            } catch (\Exception $e) {
+
             }
 
-            return null;
-        } catch (\Exception $e) {
-            return null;
+            sleep($delay);
+            $attempt++;
         }
+        throw new \Exception("Transaction timed out: $txHash");
     }
 
-    private function apiResponse(bool $status, string $message, $txHash = null, $amount  = null): array
-    {
-        return [
-            'status' => $status,
-            'message' => $message,
-            'txHash' => $txHash,
-            'amount' => $amount,
-        ];
-    }
-
-    // Convert large hex string to decimal string using BCMath
-    private function hexToDec(string $hex): string
-    {
-        $hex = strtolower($hex);
-        $dec = '0';
-        $len = strlen($hex);
-
-        for ($i = 0; $i < $len; $i++) {
-            $current = strpos('0123456789abcdef', $hex[$i]);
-            $dec = bcmul($dec, '16', 0);
-            $dec = bcadd($dec, $current, 0);
-        }
-        return $dec;
-    }
-
-    // Convert large decimal string to hex string using BCMath
-    private function decToHex(string $dec): string
-    {
-        $hex = '';
-        while (bccomp($dec, '0') > 0) {
-            $mod = bcmod($dec, '16');
-            $hex = dechex((int)$mod) . $hex;
-            $dec = bcdiv($dec, '16', 0);
-        }
-        return $hex === '' ? '0' : $hex;
-    }
-
-    private function bcdechex($dec)
-    {
-        return $this->decToHex($dec);
-    }
-
-    private function removeHexPrefix($hex)
-    {
-        return str_starts_with($hex, '0x') ? substr($hex, 2) : $hex;
-    }
-
-    private function isValidAddress($address)
-    {
-        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address) === 1;
-    }
 
     private function sendRpcRequest($rpcUrl, $postData)
     {
@@ -348,4 +301,63 @@ class TokenManage extends Crypto
 
         return $decodedResponse;
     }
+
+    private function bcdechex($dec)
+    {
+        $hex = '';
+        do {
+            $last = bcmod($dec, 16);
+            $hex = dechex($last) . $hex;
+            $dec = bcdiv(bcsub($dec, $last), 16);
+        } while ($dec > 0);
+        return $hex;
+    }
+
+    private function removeHexPrefix($hex)
+    {
+        return str_starts_with($hex, '0x') ? substr($hex, 2) : $hex;
+    }
+
+    private function isValidAddress($address)
+    {
+        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address) === 1;
+    }
+
+    public function getTransactionReceipt($rpcUrl, $txHash)
+    {
+        try {
+            $client = new \GuzzleHttp\Client();
+            $response = $client->post($rpcUrl, [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method'  => 'eth_getTransactionReceipt',
+                    'params'  => [$txHash],
+                    'id'      => 1,
+                ],
+                'timeout' => 10,
+            ]);
+
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            if (isset($result['result']) && $result['result']) {
+                return $result['result'];
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function apiResponse(bool $status, string $message, $txHash = null, $amount  = null): array
+    {
+        return [
+            'status' => $status,
+            'message' => $message,
+            'txHash' => $txHash,
+            'amount' => $amount,
+        ];
+    }
+
 }
+
