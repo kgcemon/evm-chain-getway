@@ -183,6 +183,7 @@ class TokenManage extends Crypto
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
+        dd($response);
         return hexdec($response['result']);
     }
 
