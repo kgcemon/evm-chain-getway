@@ -299,4 +299,53 @@ class TokenManage extends Crypto
     {
         return preg_match('/^0x[a-fA-F0-9]{40}$/', $address) === 1;
     }
+
+    private function sendRpcRequest($rpcUrl, $postData)
+    {
+        $ch = curl_init($rpcUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($response === false) {
+            error_log("RPC request failed for method {$postData['method']}: $curlError");
+            throw new \Exception("RPC request failed: $curlError");
+        }
+
+        if ($httpCode >= 400) {
+            error_log("RPC request returned HTTP error {$httpCode} for method {$postData['method']}: $response");
+            throw new \Exception("RPC request returned HTTP error: $httpCode");
+        }
+
+        $decodedResponse = json_decode($response, true);
+        if ($decodedResponse === null) {
+            error_log("Invalid JSON response for method {$postData['method']}: $response");
+            throw new \Exception("Invalid JSON response from RPC");
+        }
+
+        error_log("RPC response for method {$postData['method']}: " . json_encode($decodedResponse));
+
+        if (isset($decodedResponse['error'])) {
+            error_log("RPC error for method {$postData['method']}: " . json_encode($decodedResponse['error']));
+            if (isset($decodedResponse['error'])) {
+                throw new RpcException("" . $decodedResponse['error']['message'], $decodedResponse['error']);
+            }
+
+        }
+
+        if (!isset($decodedResponse['result'])) {
+            error_log("RPC response missing 'result' for method {$postData['method']}: " . json_encode($decodedResponse));
+            throw new \Exception("RPC response does not contain 'result' key for method {$postData['method']}");
+        }
+
+        return $decodedResponse;
+    }
 }
