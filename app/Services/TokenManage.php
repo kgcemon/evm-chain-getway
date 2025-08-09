@@ -43,7 +43,7 @@ class TokenManage extends Crypto
             str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
             str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
 
-        $gasLimit = 100000;
+        $gasLimit = 80000;
         $gasPrice = 1000000000; // 1 Gwei
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
 
@@ -88,6 +88,13 @@ class TokenManage extends Crypto
 
         return $this->apiResponse(false, 'Transaction sent but not confirmed after retries');
     }
+
+
+    private function ethToWei($ethAmount)
+    {
+        return bcmul($ethAmount, bcpow('10', '18', 0), 0);
+    }
+
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
@@ -98,9 +105,8 @@ class TokenManage extends Crypto
         }
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
-
-        $gasLimit = 100000;
-        $gasPrice = 5000000000;
+        $gasLimit = 80000;
+        $gasPrice = 1000000000;
 
         $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
         $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
@@ -110,12 +116,13 @@ class TokenManage extends Crypto
         }
 
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
+        $requiredTopUpWei = $this->ethToWei($requiredTopUp);
 
         $transaction = [
             'nonce' => '0x' . dechex($nonce),
             'from' => $adminAddress,
             'to' => $toAddress,
-            'value' => '0x' . dechex($requiredTopUp),
+            'value' => '0x' . dechex($requiredTopUpWei),
             'gas' => '0x' . dechex($gasLimit),
             'gasPrice' => '0x' . dechex($gasPrice),
             'chainId' => $chainId
@@ -125,10 +132,12 @@ class TokenManage extends Crypto
         $signedTx = $tx->sign($adminKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        //$this->waitForTransaction($rpcUrl, $txHash);
+        // Optional: wait for transaction confirmation
+        $this->waitForTransaction($rpcUrl, $txHash);
 
         return $txHash;
     }
+
 
     private function getNativeBalance($rpcUrl, $address): float|int
     {
@@ -179,7 +188,7 @@ class TokenManage extends Crypto
         $postData = [
             'jsonrpc' => '2.0',
             'method' => 'eth_getTransactionCount',
-            'params' => [$address, 'pending'],
+            'params' => [$address, 'pending'], // 'pending' important here
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
