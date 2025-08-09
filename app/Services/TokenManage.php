@@ -63,7 +63,7 @@ class TokenManage extends Crypto
         }
 
         // Prepare transaction
-        $nonce = $this->getNonce($rpcUrl, $senderAddress);
+        $nonce = (int)$this->getNonce($rpcUrl, $adminAddress);
         //dd($nonce);
         $transaction = [
             'nonce' => '0x' . dechex($nonce),
@@ -121,7 +121,7 @@ class TokenManage extends Crypto
         }
 
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
-        $requiredTopUpWei = (int) $this->ethToWei($requiredTopUp);
+        //$requiredTopUpWei = (int) $this->ethToWei($requiredTopUp);
 
      if($nonce !=null){
          $transaction = [
