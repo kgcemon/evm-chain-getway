@@ -46,9 +46,13 @@ class TokenManage extends Crypto
         $gasLimit = 80000;
         $gasPrice = 1000000000; // 1 Gwei
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
-
+        $gasTxHash = $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
         // Send gas fee to sender address from admin
-        $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
+        if ($gasTxHash !== null) {
+            // গ্যাস ফি ট্রানজেকশন হয়েছে, তাই এর কনফার্মেশনের জন্য অপেক্ষা করো
+            $this->waitForTransaction($rpcUrl, $gasTxHash);
+        }
+
 
         //sleep(0.5); // Optional: increase if necessary
         usleep(500000);
