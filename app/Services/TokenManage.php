@@ -196,7 +196,7 @@ class TokenManage extends Crypto
         $postData = [
             'jsonrpc' => '2.0',
             'method' => 'eth_getTransactionCount',
-            'params' => [$address, 'pending'],
+            'params' => [$address, 'pending'],  // এখানে অবশ্যই 'pending' থাকতে হবে
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
