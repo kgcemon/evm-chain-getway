@@ -1,12 +1,12 @@
 <?php
 
 namespace App\Services;
+
 use App\Exceptions\RpcException;
 use Web3p\EthereumTx\Transaction;
 
 class TokenManage extends Crypto
 {
-
     public function sendAnyChainTokenTransaction($senderAddress, $tokenAddress, $toAddress, $userKey, $rpcUrl, $chainId, $adminAddress, $adminKey, $amount = null, $isFullOut = false)
     {
         if (!$this->isValidAddress($senderAddress) || !$this->isValidAddress($tokenAddress) || !$this->isValidAddress($toAddress)) {
@@ -63,14 +63,15 @@ class TokenManage extends Crypto
             str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
 
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
+        $nonceHex = $this->decToHex($nonce);
 
         $transaction = [
-            'nonce' => '0x' . dechex($nonce),
+            'nonce' => '0x' . $nonceHex,
             'from' => $senderAddress,
             'to' => $tokenAddress,
             'value' => '0x0',
-            'gas' => '0x' . dechex($gasLimit),
-            'gasPrice' => '0x' . dechex($gasPrice),
+            'gas' => '0x' . $this->decToHex((string)$gasLimit),
+            'gasPrice' => '0x' . $this->decToHex((string)$gasPrice),
             'data' => $data,
             'chainId' => $chainId,
         ];
@@ -100,6 +101,7 @@ class TokenManage extends Crypto
         }
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
+        $nonceHex = $this->decToHex($nonce);
 
         // Fixed gas limit 60000 and gas price capped at 1 Gwei
         $gasLimit = 60000;
@@ -117,12 +119,12 @@ class TokenManage extends Crypto
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
 
         $transaction = [
-            'nonce' => '0x' . dechex($nonce),
+            'nonce' => '0x' . $nonceHex,
             'from' => $adminAddress,
             'to' => $toAddress,
-            'value' => '0x' . dechex($requiredTopUp),
-            'gas' => '0x' . dechex($gasLimit),
-            'gasPrice' => '0x' . dechex($gasPrice),
+            'value' => '0x' . $this->decToHex($requiredTopUp),
+            'gas' => '0x' . $this->decToHex((string)$gasLimit),
+            'gasPrice' => '0x' . $this->decToHex((string)$gasPrice),
             'chainId' => $chainId
         ];
 
@@ -133,7 +135,6 @@ class TokenManage extends Crypto
         return $txHash;
     }
 
-
     private function getGasPrice($rpcUrl)
     {
         $postData = [
@@ -143,11 +144,10 @@ class TokenManage extends Crypto
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
-        return hexdec($this->removeHexPrefix($response['result']));
+        return $this->hexToDec($this->removeHexPrefix($response['result']));
     }
 
-
-    private function getNativeBalance($rpcUrl, $address): float|int
+    private function getNativeBalance($rpcUrl, $address): string
     {
         $postData = [
             'jsonrpc' => '2.0',
@@ -156,7 +156,7 @@ class TokenManage extends Crypto
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
-        return hexdec($this->removeHexPrefix($response['result']));
+        return $this->hexToDec($this->removeHexPrefix($response['result']));
     }
 
     private function getTokenBalance($rpcUrl, $address, $tokenAddress)
@@ -176,7 +176,7 @@ class TokenManage extends Crypto
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
 
-        return hexdec($this->removeHexPrefix($response['result']));
+        return $this->hexToDec($this->removeHexPrefix($response['result']));
     }
 
     private function toPlainString($number)
@@ -190,19 +190,18 @@ class TokenManage extends Crypto
         return (string) $number;
     }
 
-
-    private function getNonce($rpcUrl, $address)
+    private function getNonce($rpcUrl, $address): string
     {
         $postData = [
             'jsonrpc' => '2.0',
             'method' => 'eth_getTransactionCount',
-            'params' => [$address, 'pending'],  // এখানে অবশ্যই 'pending' থাকতে হবে
+            'params' => [$address, 'pending'],  // অবশ্যই 'pending' ব্যবহার করবেন
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
-        return hexdec($response['result']);
-    }
 
+        return $this->hexToDec($this->removeHexPrefix($response['result']));
+    }
 
     private function sendRawTransaction($rpcUrl, $signedTx)
     {
@@ -215,129 +214,12 @@ class TokenManage extends Crypto
         $response = $this->sendRpcRequest($rpcUrl, $postData);
         $txHash = $response['result'];
 
-        // Validate transaction hash format
         if (!preg_match('/^0x[a-fA-F0-9]{64}$/', $txHash)) {
             error_log("Invalid transaction hash returned: " . $txHash);
             throw new \Exception("Invalid transaction hash returned: " . $txHash);
         }
 
         return $txHash;
-    }
-
-    private function waitForTransaction($rpcUrl, $txHash)
-    {
-        if (!preg_match('/^0x[a-fA-F0-9]{64}$/', $txHash)) {
-            throw new \Exception("Invalid transaction hash: " . $txHash);
-        }
-
-        $maxAttempts = 10;
-        $attempt = 0;
-        $delay = 1;
-
-        while ($attempt < $maxAttempts) {
-            $postData = [
-                'jsonrpc' => '2.0',
-                'method' => 'eth_getTransactionReceipt',
-                'params' => [$txHash],
-                'id' => 1
-            ];
-
-            try {
-                $response = $this->sendRpcRequest($rpcUrl, $postData);
-
-                if (array_key_exists('result', $response)) {
-                    if ($response['result'] !== null) {
-                        $status = $response['result']['status'] ?? null;
-                        if ($status === '0x1') {
-                            return true;
-                        } elseif ($status === '0x0') {
-                            throw new \Exception("Transaction failed: $txHash");
-                        }
-                    }
-                } else {
-                    // No result key present
-                    error_log("Transaction $txHash RPC response missing 'result', attempt " . ($attempt + 1) . " of $maxAttempts: " . json_encode($response));
-                }
-
-            } catch (\Exception $e) {
-
-            }
-
-            sleep($delay);
-            $attempt++;
-        }
-        throw new \Exception("Transaction timed out: $txHash");
-    }
-
-
-    private function sendRpcRequest($rpcUrl, $postData)
-    {
-        $ch = curl_init($rpcUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-
-        if ($response === false) {
-            error_log("RPC request failed for method {$postData['method']}: $curlError");
-            throw new \Exception("RPC request failed: $curlError");
-        }
-
-        if ($httpCode >= 400) {
-            error_log("RPC request returned HTTP error {$httpCode} for method {$postData['method']}: $response");
-            throw new \Exception("RPC request returned HTTP error: $httpCode");
-        }
-
-        $decodedResponse = json_decode($response, true);
-        if ($decodedResponse === null) {
-            error_log("Invalid JSON response for method {$postData['method']}: $response");
-            throw new \Exception("Invalid JSON response from RPC");
-        }
-
-        error_log("RPC response for method {$postData['method']}: " . json_encode($decodedResponse));
-
-        if (isset($decodedResponse['error'])) {
-            error_log("RPC error for method {$postData['method']}: " . json_encode($decodedResponse['error']));
-            if (isset($decodedResponse['error'])) {
-                throw new RpcException("" . $decodedResponse['error']['message'], $decodedResponse['error']);
-            }
-
-        }
-
-        if (!isset($decodedResponse['result'])) {
-            error_log("RPC response missing 'result' for method {$postData['method']}: " . json_encode($decodedResponse));
-            throw new \Exception("RPC response does not contain 'result' key for method {$postData['method']}");
-        }
-
-        return $decodedResponse;
-    }
-
-    private function bcdechex($dec)
-    {
-        $hex = '';
-        do {
-            $last = bcmod($dec, 16);
-            $hex = dechex($last) . $hex;
-            $dec = bcdiv(bcsub($dec, $last), 16);
-        } while ($dec > 0);
-        return $hex;
-    }
-
-    private function removeHexPrefix($hex)
-    {
-        return str_starts_with($hex, '0x') ? substr($hex, 2) : $hex;
-    }
-
-    private function isValidAddress($address)
-    {
-        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address) === 1;
     }
 
     public function getTransactionReceipt($rpcUrl, $txHash)
@@ -376,5 +258,45 @@ class TokenManage extends Crypto
         ];
     }
 
-}
+    // Convert large hex string to decimal string using BCMath
+    private function hexToDec(string $hex): string
+    {
+        $hex = strtolower($hex);
+        $dec = '0';
+        $len = strlen($hex);
 
+        for ($i = 0; $i < $len; $i++) {
+            $current = strpos('0123456789abcdef', $hex[$i]);
+            $dec = bcmul($dec, '16', 0);
+            $dec = bcadd($dec, $current, 0);
+        }
+        return $dec;
+    }
+
+    // Convert large decimal string to hex string using BCMath
+    private function decToHex(string $dec): string
+    {
+        $hex = '';
+        while (bccomp($dec, '0') > 0) {
+            $mod = bcmod($dec, '16');
+            $hex = dechex((int)$mod) . $hex;
+            $dec = bcdiv($dec, '16', 0);
+        }
+        return $hex === '' ? '0' : $hex;
+    }
+
+    private function bcdechex($dec)
+    {
+        return $this->decToHex($dec);
+    }
+
+    private function removeHexPrefix($hex)
+    {
+        return str_starts_with($hex, '0x') ? substr($hex, 2) : $hex;
+    }
+
+    private function isValidAddress($address)
+    {
+        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address) === 1;
+    }
+}
