@@ -21,7 +21,6 @@ class TokenManage extends Crypto
             return $this->apiResponse(false, 'Token balance is invalid or zero');
         }
 
-        // Determine amount to send
         $decimals = 18;
         if ($isFullOut && $amount === null) {
             $amountInWei = $balanceInWei;
@@ -29,7 +28,6 @@ class TokenManage extends Crypto
             if (!is_numeric($amount)) {
                 return $this->apiResponse(false, 'Amount must be a valid number');
             }
-
             $amountInWei = bcmul((string)$amount, bcpow('10', (string)$decimals), 0);
             $amountInWei = $this->toPlainString($amountInWei);
 
@@ -38,19 +36,20 @@ class TokenManage extends Crypto
             }
         }
 
-        // Prepare data for token transfer
-        $data = '0xa9059cbb' .
-            str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
-            str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
+        // Gas limit fixed to 60000
+        $gasLimit = 60000;
 
-        $gasLimit = 100000;
-        $gasPrice = 1000000000; // 1 Gwei
+        // Get current gas price from network but cap max at 1 Gwei (1_000_000_000 wei)
+        $networkGasPrice = $this->getGasPrice($rpcUrl);
+        $maxGasPrice = 1000000000; // 1 Gwei
+
+        $gasPrice = ($networkGasPrice > $maxGasPrice) ? $maxGasPrice : $networkGasPrice;
+
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
 
-        // Send gas fee to sender address from admin
+        // Send gas fee to sender address from admin if needed
         $this->sendGasFee($rpcUrl, $senderAddress, $gasFeeInWei, $adminKey, $chainId, $adminAddress);
 
-        //sleep(0.5); // Optional: increase if necessary
         usleep(500000);
 
         $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress);
@@ -58,8 +57,13 @@ class TokenManage extends Crypto
             return $this->apiResponse(false, 'Gas fee not received by sender address');
         }
 
-        // Prepare transaction
+        // Prepare token transfer data
+        $data = '0xa9059cbb' .
+            str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
+            str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
+
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
+
         $transaction = [
             'nonce' => '0x' . dechex($nonce),
             'from' => $senderAddress,
@@ -71,23 +75,21 @@ class TokenManage extends Crypto
             'chainId' => $chainId,
         ];
 
-        // Sign and send
         $tx = new Transaction($transaction);
         $signedTx = $tx->sign($userKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        // Confirm transaction success via receipt
         for ($i = 0; $i < 10; $i++) {
             $receipt = $this->getTransactionReceipt($rpcUrl, $txHash);
             if ($receipt && isset($receipt['status']) && hexdec($receipt['status']) === 1) {
                 return $this->apiResponse(true, 'Transaction sent successfully.', $txHash, number_format(bcdiv($amountInWei, bcpow('10', '18'), 4), 4, '.', ''));
             }
-           // sleep(0.2); // wait before retrying
             usleep(500000);
         }
 
         return $this->apiResponse(false, 'Transaction sent but not confirmed after retries');
     }
+
     private function sendGasFee($rpcUrl, $toAddress, $estimatedGasFee, $adminKey, $chainId, $adminAddress)
     {
         if (!$this->isValidAddress($toAddress)) {
@@ -99,14 +101,17 @@ class TokenManage extends Crypto
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
 
-        $gasLimit = 100000;
-        $gasPrice = 5000000000;
+        // Fixed gas limit 60000 and gas price capped at 1 Gwei
+        $gasLimit = 60000;
+        $maxGasPrice = 1000000000; // 1 Gwei
+        $networkGasPrice = $this->getGasPrice($rpcUrl);
+        $gasPrice = ($networkGasPrice > $maxGasPrice) ? $maxGasPrice : $networkGasPrice;
 
         $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
-        $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
+        $totalNeeded = $this->toPlainString($estimatedGasFee);
 
         if (bccomp($currentBalance, $totalNeeded) >= 0) {
-            return null;
+            return null; // no need to top up
         }
 
         $requiredTopUp = $this->toPlainString(bcsub($totalNeeded, $currentBalance));
@@ -125,10 +130,22 @@ class TokenManage extends Crypto
         $signedTx = $tx->sign($adminKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        //$this->waitForTransaction($rpcUrl, $txHash);
-
         return $txHash;
     }
+
+
+    private function getGasPrice($rpcUrl)
+    {
+        $postData = [
+            'jsonrpc' => '2.0',
+            'method' => 'eth_gasPrice',
+            'params' => [],
+            'id' => 1
+        ];
+        $response = $this->sendRpcRequest($rpcUrl, $postData);
+        return hexdec($this->removeHexPrefix($response['result']));
+    }
+
 
     private function getNativeBalance($rpcUrl, $address): float|int
     {
