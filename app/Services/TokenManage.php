@@ -98,7 +98,7 @@ class TokenManage extends Crypto
         }
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
-
+        dd($nonce);
         $gasLimit = 80000;
         $gasPrice = 1000000000;
 
@@ -179,11 +179,10 @@ class TokenManage extends Crypto
         $postData = [
             'jsonrpc' => '2.0',
             'method' => 'eth_getTransactionCount',
-            'params' => [$address, 'pending'],
+            'params' => [$address, 'pending'], // 'pending' important here
             'id' => 1
         ];
         $response = $this->sendRpcRequest($rpcUrl, $postData);
-        dd($response);
         return hexdec($response['result']);
     }
 
