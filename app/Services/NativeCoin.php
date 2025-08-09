@@ -33,27 +33,18 @@ class NativeCoin extends Crypto
                 ]
             ])->getBody(), true)['result']);
 
-            // Get minimum possible gas price using eth_feeHistory
-            $feeHistory = json_decode($client->post($rpcUrl, [
+            // Get gas price
+            $gasPrice = hexdec(json_decode($client->post($rpcUrl, [
                 'json' => [
                     'jsonrpc' => '2.0',
-                    'method' => 'eth_feeHistory',
-                    'params' => ['0x1', 'latest', []],
+                    'method' => 'eth_gasPrice',
+                    'params' => [],
                     'id' => 2
                 ]
-            ])->getBody(), true);
+            ])->getBody(), true)['result']);
 
-            $baseFee = isset($feeHistory['result']['baseFeePerGas'])
-                ? hexdec(end($feeHistory['result']['baseFeePerGas']))
-                : hexdec('0x3B9ACA00'); // fallback 1 Gwei if not available
-
-            // Add very low priority fee (1 Gwei)
-            $priorityFee = gmp_init(bcmul('1', bcpow('10', '9', 0)));
-            $gasPrice = gmp_add($baseFee, $priorityFee);
-
-            // Fixed gas limit for native transfer
             $gasLimit = 21000;
-            $gasCost = gmp_mul($gasPrice, gmp_init($gasLimit));
+            $gasCost = gmp_mul(gmp_init($gasPrice), gmp_init($gasLimit));
 
             // Get balance
             $balanceHex = json_decode($client->post($rpcUrl, [
@@ -70,7 +61,6 @@ class NativeCoin extends Crypto
                 return $this->apiResponse(false, 'Insufficient balance.');
             }
 
-            // Amount calculation
             if ($isFullOut && $amount == null) {
                 $amountWei = gmp_sub($balanceWei, $gasCost);
                 if (gmp_cmp($amountWei, 0) <= 0) {
@@ -91,7 +81,7 @@ class NativeCoin extends Crypto
             // Create and sign transaction
             $tx = new Transaction([
                 'nonce' => '0x' . dechex($nonce),
-                'gasPrice' => '0x' . gmp_strval($gasPrice, 16),
+                'gasPrice' => '0x' . dechex($gasPrice),
                 'gas' => '0x' . dechex($gasLimit),
                 'to' => $toAddress,
                 'value' => '0x' . gmp_strval($amountWei, 16),
