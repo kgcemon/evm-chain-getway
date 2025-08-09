@@ -108,7 +108,7 @@ class TokenManage extends Crypto
             ]);
         }
 
-        $nonce = $this->getNonce($rpcUrl, $adminAddress);
+        $nonce = (int)$this->getNonce($rpcUrl, $adminAddress);
         $gasLimit = 80000;
         $gasPrice = 1000000000;
 
