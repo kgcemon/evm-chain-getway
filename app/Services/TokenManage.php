@@ -43,8 +43,8 @@ class TokenManage extends Crypto
             str_pad(substr($this->removeHexPrefix($toAddress), 0, 64), 64, '0', STR_PAD_LEFT) .
             str_pad($this->bcdechex($amountInWei), 64, '0', STR_PAD_LEFT);
 
-        $gasLimit = 100000;
-        $gasPrice = 1000000000; // 1 Gwei
+        $gasLimit = 80000;
+        $gasPrice = 1000000000;
         $gasFeeInWei = bcmul((string)$gasLimit, (string)$gasPrice);
 
         // Send gas fee to sender address from admin
@@ -99,8 +99,8 @@ class TokenManage extends Crypto
 
         $nonce = $this->getNonce($rpcUrl, $adminAddress);
 
-        $gasLimit = 100000;
-        $gasPrice = 5000000000;
+        $gasLimit = 80000;
+        $gasPrice = 1000000000;
 
         $currentBalance = $this->toPlainString($this->getNativeBalance($rpcUrl, $toAddress));
         $totalNeeded = $this->toPlainString(bcadd($estimatedGasFee, '0'));
@@ -125,7 +125,7 @@ class TokenManage extends Crypto
         $signedTx = $tx->sign($adminKey);
         $txHash = $this->sendRawTransaction($rpcUrl, $signedTx);
 
-        //$this->waitForTransaction($rpcUrl, $txHash);
+        $this->waitForTransaction($rpcUrl, $txHash);
 
         return $txHash;
     }
