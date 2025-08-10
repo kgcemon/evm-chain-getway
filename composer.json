@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.2",
         "fgrosse/phpasn1": "^2.5",
+        "google/apiclient": "^2.12",
         "kornrunner/ethereum-offline-raw-tx": "^0.8.0",
         "kornrunner/keccak": "^1.1",
         "laravel/framework": "^12.0",
