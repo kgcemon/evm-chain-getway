@@ -89,14 +89,12 @@ class ClientWalletBalanceController extends Controller
     public function BalanceCheck(Request $request)
     {
         $validate = $request->validate([
-            'chain_id' => 'required|integer|exists:chain_list,id',
+            'chain_id' => 'required|integer',
             'user_id' => 'required|integer|exists:users,id',
             'type' => 'required',
             'contract_address' => 'sometimes|string',
             'address' => 'required',
         ]);
-
-        dd($validate['user_id']);
         $user = User::where('id',$validate['user_id'])->first();
         if (!$user) {
             return response()->json([
