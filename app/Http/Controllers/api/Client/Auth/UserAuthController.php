@@ -108,7 +108,7 @@ class UserAuthController extends Controller
                 $token = $user->createToken('API Token')->plainTextToken;
 
                 return response()->json([
-                    'error' => false,
+                    'status' => true,
                     'message' => 'Login successful',
                     'token' => $token,
                     'user' => $user,
