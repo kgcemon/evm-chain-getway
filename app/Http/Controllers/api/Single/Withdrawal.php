@@ -95,7 +95,7 @@ class Withdrawal extends Controller
                        try {
                            Transactions::create([
                                'user_id' => $user->id,
-                               'chain_id' => $chainId,
+                               'chain_id' => $chain->id,
                                'amount' => $res['amount'],
                                'trx_hash' => $res['txHash'],
                                'type' => $validatedData->type,
