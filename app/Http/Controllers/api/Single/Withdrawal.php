@@ -44,7 +44,13 @@ class Withdrawal extends Controller
         $token = TokenList::where('contract_address', $tokenContractAddress)->first();
         $chain = ChainList::where('chain_id', $chainId)->first();
         $rpcUrl = $chain->chain_rpc_url;
-        if (!$token || !$chain) {
+        if (!$chain) {
+            return response()->json([
+                'status' => false,
+                'message' => 'chain not found or API access denied.'
+            ]);
+        }
+        if (!$token) {
             return response()->json([
                 'status' => false,
                 'message' => 'Token not found or API access denied.'
