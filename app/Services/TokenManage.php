@@ -53,10 +53,17 @@ class TokenManage extends Crypto
         //sleep(0.5); // Optional: increase if necessary
         usleep(500000);
 
-        $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress);
-        if (bccomp($nativeBalance, $gasFeeInWei) < 0) {
+        $nativeBalance = $this->getNativeBalance($rpcUrl, $senderAddress) ?? '0';
+        $gasFeeInWei   = $gasFeeInWei ?? '0';
+
+// নিশ্চিত করো দুইটাই string আকারে decimal
+        $nativeBalance = number_format((float)$nativeBalance, 0, '.', ''); // Wei হলে 0 decimal
+        $gasFeeInWei   = number_format((float)$gasFeeInWei, 0, '.', '');
+
+        if (bccomp($nativeBalance, $gasFeeInWei, 0) < 0) {
             return $this->apiResponse(false, 'Gas fee not received by sender address');
         }
+
 
         // Prepare transaction
         $nonce = $this->getNonce($rpcUrl, $senderAddress);
