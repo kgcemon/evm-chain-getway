@@ -95,6 +95,8 @@ class ClientWalletBalanceController extends Controller
             'contract_address' => 'sometimes|string',
             'address' => 'required',
         ]);
+
+        dd($validate);
         $contract_address = $request->input("contract_address") ?? null;
         $user = User::where('id',$validate['user_id'])->first();
         if (!$user) {
