@@ -88,33 +88,42 @@ class ClientWalletBalanceController extends Controller
 
     public function BalanceCheck(Request $request)
     {
-        $validate = $request->validate([
-            'chain_id' => 'required|integer',
-            'user_id' => 'required|integer|exists:users,id',
-            'type' => 'required',
-            'contract_address' => 'sometimes|string',
-            'address' => 'required',
+        $data = $request->validate([
+            'chain_id'         => 'required|integer',
+            'user_id'          => 'required|integer|exists:users,id',
+            'type'             => 'required|string',
+            'contract_address' => 'nullable|string',
+            'address'          => 'required|string',
         ]);
 
-        $contract_address = $request->input("contract_address") ?? null;
-        $user = User::where('id',$validate['user_id'])->first();
+        // Check user existence (already validated with `exists`, so this is optional unless you need the model)
+        $user = User::find($data['user_id']);
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'message' => 'unauthorized',
-            ]);
+                'status'  => false,
+                'message' => 'Unauthorized',
+            ], 401);
         }
 
-        $chain = ChainList::where('chain_id', $validate['chain_id'])->first();
+        // Find chain
+        $chain = ChainList::where('chain_id', $data['chain_id'])->first();
         if (!$chain) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Chain not found',
-            ]);
+            ], 404);
         }
 
-        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['address'], $validate['type'],$contract_address == null ? : $contract_address);
+        $contractAddress = $data['contract_address'] ?? null;
+
+        return $this->checkBalance->balance(
+            $chain->chain_rpc_url,
+            $data['address'],
+            $data['type'],
+            $contractAddress
+        );
     }
+
 
 
 }
