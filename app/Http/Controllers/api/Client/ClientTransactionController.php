@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class ClientTransactionController extends Controller
 {
     public function index(Request $request){
-        $user = $request->user();
+        $user =  $request->user();
         $transactions = Transactions::where('user_id', $user->id)->orderBy('created_at', 'desc')->orderBy('id','desc')->paginate(20);
         if(!$transactions->count() > 0){
             return response()->json([
