@@ -95,6 +95,7 @@ class ClientWalletBalanceController extends Controller
             'contract_address' => 'sometimes|string',
             'address' => 'required',
         ]);
+        $contract_address = $request->input("contract_address") ?? null;
         $user = User::where('id',$validate['user_id'])->first();
         if (!$user) {
             return response()->json([
@@ -111,7 +112,7 @@ class ClientWalletBalanceController extends Controller
             ]);
         }
 
-        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['type'], $validate['contract_address'] == null ? null : $validate['contract_address'], $validate['address']);
+        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['type'], $contract_address == null ? null : $contract_address, $validate['address']);
     }
 
 
