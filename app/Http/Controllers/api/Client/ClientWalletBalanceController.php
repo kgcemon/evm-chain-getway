@@ -96,6 +96,7 @@ class ClientWalletBalanceController extends Controller
             'address' => 'required',
         ]);
 
+        dd($validate['user_id']);
         $user = User::where('id',$validate['user_id'])->first();
         if (!$user) {
             return response()->json([
