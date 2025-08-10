@@ -96,7 +96,6 @@ class ClientWalletBalanceController extends Controller
             'address' => 'required',
         ]);
 
-        dd($validate);
         $contract_address = $request->input("contract_address") ?? null;
         $user = User::where('id',$validate['user_id'])->first();
         if (!$user) {
@@ -114,7 +113,7 @@ class ClientWalletBalanceController extends Controller
             ]);
         }
 
-        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['type'], $contract_address == null ? null : $contract_address, $validate['address']);
+        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['address'], $validate['type']);
     }
 
 
