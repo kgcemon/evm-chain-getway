@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Route;
 //client
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('my-balance',[ClientWalletBalanceController::class,'balanceList']);
-    Route::get('check-balance',[ClientWalletBalanceController::class,'BalanceCheck']);
     Route::get('/user',[UserAuthController::class,'profile']);
     Route::post('/user-update',[UserAuthController::class,'updateProfile']);
     Route::post('/withdraw',[ClientWithdrawController::class,'withdraw']);
@@ -37,3 +36,4 @@ Route::post('/deposit', [Deposit::class, 'deposit']);
 Route::post('create-wallet', [CreateWallet::class, 'createAddress']);
 Route::middleware(['throttle:20,1'])->get('payments/{id}', [PaymentJobController::class, 'checkNewPayments']);
 Route::get('invoice/{invoice_id}', [PaymentJobController::class, 'invoiceData']);
+Route::get('check-balance',[ClientWalletBalanceController::class,'BalanceCheck']);

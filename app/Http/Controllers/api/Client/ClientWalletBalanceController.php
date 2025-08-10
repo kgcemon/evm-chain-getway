@@ -113,7 +113,7 @@ class ClientWalletBalanceController extends Controller
             ]);
         }
 
-        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['type'], $validate['contract_address'], $validate['address']);
+        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['type'], $validate['contract_address'] ?? null, $validate['address']);
     }
 
 
