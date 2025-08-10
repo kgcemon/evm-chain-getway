@@ -27,7 +27,6 @@ class PayOutRequest extends FormRequest
             'to' => 'required',
             'token_address' => 'sometimes|string',
             'chain_id' => 'required',
-            'rpc_url' => 'required',
             'user_id' => 'required',
         ];
     }
