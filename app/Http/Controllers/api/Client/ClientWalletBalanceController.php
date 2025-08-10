@@ -92,7 +92,7 @@ class ClientWalletBalanceController extends Controller
             'chain_id' => 'required|integer|exists:chain_list,id',
             'user_id' => 'required|integer|exists:users,id',
             'type' => 'required',
-            'contract_address' => 'required',
+            'contract_address' => 'sometimes|string',
             'address' => 'required',
         ]);
 
