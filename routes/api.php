@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
 //auth
 Route::post('create-account', [UserAuthController::class, 'createAccount']);
 Route::post('create-login', [UserAuthController::class, 'login']);
+Route::post('login-with-google', [UserAuthController::class, 'loginWithGoogleToken']);
 
 
 //invoice
