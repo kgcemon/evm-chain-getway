@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChainList;
+use App\Models\User;
 use App\Services\CheckBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -83,6 +84,35 @@ class ClientWalletBalanceController extends Controller
                 'message' => $exception->getMessage(),
             ]);
         }
+    }
+
+    public function BalanceCheck(Request $request)
+    {
+        $validate = $request->validate([
+            'chain_id' => 'required|integer|exists:chain_list,id',
+            'user_id' => 'required|integer|exists:users,id',
+            'type' => 'required',
+            'contract_address' => 'required',
+            'address' => 'required',
+        ]);
+
+        $user = User::where('id',$validate['user_id'])->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'unauthorized',
+            ]);
+        }
+
+        $chain = ChainList::where('chain_id', $validate['chain_id'])->first();
+        if (!$chain) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Chain not found',
+            ]);
+        }
+
+        return $this->checkBalance->balance($chain->chain_rpc_url, $validate['type'], $validate['contract_address'], $validate['address']);
     }
 
 
