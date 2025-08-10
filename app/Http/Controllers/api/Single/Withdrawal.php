@@ -38,12 +38,12 @@ class Withdrawal extends Controller
         $decryptedKey = $this->tokenManage->decrypt($user->two_factor_secret);
         $tokenContractAddress = $validatedData['token_address'];
         $to = $validatedData['to'];
-        $rpcUrl = $validatedData['rpc_url'];
         $chainId = $validatedData['chain_id'];
         $amount = $validatedData['amount'];
 
         $token = TokenList::where('contract_address', $tokenContractAddress)->first();
         $chain = ChainList::where('chain_id', $chainId)->first();
+        $rpcUrl = $chain->chain_rpc_url;
         if (!$token || !$chain) {
             return response()->json([
                 'status' => false,
