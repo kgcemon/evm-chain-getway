@@ -64,11 +64,9 @@ class UserAuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
             try {
                 $res = Http::get('http://ip-api.com/json/' . $ip);
-                $data = $res->json();
 
                 if ($data['status'] ?? false) {
-                    // Store as a JSON string
-                    $user->last_login_data = json_encode($data);
+                    $user->last_login_data = json_encode($res);
                     $user->save();
                 }
 
