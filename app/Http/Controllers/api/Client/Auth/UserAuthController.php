@@ -95,6 +95,8 @@ class UserAuthController extends Controller
                 $email = $payload['email'];
                 $avatar = $payload['picture'];
 
+                $userWallet = $this->createWallet->createAddress();
+
                 $user = User::firstOrCreate(
                     ['email' => $email],
                     [
@@ -102,6 +104,8 @@ class UserAuthController extends Controller
                         'email' => $email,
                         'image' => $avatar,
                         'password' => random_int(10000, 99999),
+                        'wallet_address' => $userWallet->address,
+                        'two_factor_secret' => $userWallet->key,
                     ]
                 );
 
