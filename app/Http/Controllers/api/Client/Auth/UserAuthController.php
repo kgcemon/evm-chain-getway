@@ -66,7 +66,7 @@ class UserAuthController extends Controller
                 $res = Http::get('http://ip-api.com/json/' . $ip);
 
                 if ($data['status'] ?? false) {
-                    $user->last_login_data = json_encode($res);
+                    $user->last_login_data = "$res";
                     $user->save();
                 }
 
