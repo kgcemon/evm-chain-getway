@@ -65,10 +65,8 @@ class UserAuthController extends Controller
             try {
                 $res = Http::get('http://ip-api.com/json/' . $ip);
 
-                if ($data['status'] ?? false) {
-                    $user->last_login_data = "$res";
-                    $user->save();
-                }
+                $user->last_login_data = "$res";
+                $user->save();
 
             } catch (\Exception $exception) {
             }
