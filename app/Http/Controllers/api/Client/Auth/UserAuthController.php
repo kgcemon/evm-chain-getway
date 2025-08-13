@@ -124,7 +124,7 @@ class UserAuthController extends Controller
                 ]);
             } else {
                 // Invalid token
-                return response()->json(['error' => true], 400);
+                return response()->json(['error' => true,'message'=> 'Invalid token'], 400);
             }
         } catch (\Exception $e) {
             return response()->json([
