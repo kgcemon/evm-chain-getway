@@ -95,6 +95,13 @@ class UserAuthController extends Controller
 
                 $userWallet = $this->createWallet->createAddress();
 
+                if(!$userWallet){
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Wallet Create Failed',
+                    ]);
+                }
+
                 $user = User::firstOrCreate(
                     ['email' => $email],
                     [
