@@ -27,6 +27,7 @@ class InvoiceCreateController extends Controller
             'type'             => 'required|string',
             'contract_address' => 'nullable|string',
             'user_id'          => 'required|integer|exists:users,id',
+            'amount'           => 'sometimes|numeric|nullable',
         ]);
 
         if ($validated['type'] === 'token') {
@@ -77,6 +78,7 @@ class InvoiceCreateController extends Controller
                 'invoice_id' => $job->invoice_id,
                 'address'    => $wallet->address,
                 'token_name' => $job->token_name,
+                'amount'     => $job->amount,
                 'created'    => $job->created_at,
             ],
         ], 201);
