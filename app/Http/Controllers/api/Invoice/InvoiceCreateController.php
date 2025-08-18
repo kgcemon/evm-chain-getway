@@ -76,6 +76,7 @@ class InvoiceCreateController extends Controller
             'data'    => [
                 'invoice_id' => $job->invoice_id,
                 'address'    => $wallet->address,
+                'token_name' => $job->token_name,
                 'created'    => $job->created_at,
             ],
         ], 201);
