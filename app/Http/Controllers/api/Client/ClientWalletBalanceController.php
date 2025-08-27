@@ -21,7 +21,7 @@ class ClientWalletBalanceController extends Controller
     {
         $user = $request->user();
         $wallet = $user->wallet_address;
-
+        Cache::forget('balance_list_' . $user->id);
         $cacheKey = 'balance_list_' . $user->id;
 
         $cachedData = Cache::get($cacheKey);
