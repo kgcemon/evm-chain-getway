@@ -8,6 +8,7 @@ use App\Services\CheckBalance;
 use App\Services\Crypto;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class PaymentJobController extends Controller
@@ -51,6 +52,7 @@ class PaymentJobController extends Controller
                 $user = User::where('id', $job->user_id)->first();
 
                 if ($job->type === 'native') {
+                    Cache::forget('balance_list_' . $user->id);
                     $res = $this->nativeCoin->sendAnyChainNativeBalance(
                         "$walletAddress",
                         $user->wallet_address,
@@ -77,6 +79,7 @@ class PaymentJobController extends Controller
                         continue;
                     }
                 }elseif ($job->type == 'token') {
+                    Cache::forget('balance_list_' . $user->id);
                   $data = $this->tokenManage->sendAnyChainTokenTransaction(
                       "$walletAddress",
                       $job->contract_address,
