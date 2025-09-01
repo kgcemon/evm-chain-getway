@@ -41,7 +41,7 @@ class PaymentJobController extends Controller
 
         foreach ($jobs as $job) {
             try {
-                if ($job->created_at->lt(now()->subMinutes(20))) {
+                if ($job->created_at->lt(now()->subMinutes(100))) {
                     $this->expireJob($job);
                     continue;
                 }
