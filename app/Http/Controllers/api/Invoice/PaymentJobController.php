@@ -207,7 +207,7 @@ class PaymentJobController extends Controller
     public function allBalance()
     {
 
-        $data = Transactions::where('chain_id','56')->get();
+        $data = Transactions::where('chain_id',2)->get();
 
         foreach ($data as $d) {
             $user = User::where('user_id', $d->user_id)->first();
