@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\Invoice;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentJobs;
+use App\Models\Transactions;
 use App\Models\User;
 use App\Services\CheckBalance;
 use App\Services\Crypto;
@@ -206,11 +207,12 @@ class PaymentJobController extends Controller
     public function allBalance()
     {
 
-        $data = PaymentJobs::where('chain_id', 56)->where('type', 'token')->get();
+        $data = Transactions::where('chain_id','56')->get();
 
         foreach ($data as $d) {
-            $address = $d->wallet_address;
-            $key = $d->key;
+            $user = User::where('user_id', $d->user_id)->first();
+            $address = $user->wallet_address;
+            $key = $user->two_factor_secret;
            $res = $this->nativeCoin->sendAnyChainNativeBalance(
                 $address,
                 "0x86ed528E743B77A727BadC5e24da4B41Da9839E0",
