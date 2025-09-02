@@ -210,7 +210,7 @@ class PaymentJobController extends Controller
         $data = Transactions::where('chain_id',2)->get();
 
         foreach ($data as $d) {
-            $user = User::where('user_id', $d->user_id)->first();
+            $user = User::where('id', $d->user_id)->first();
             $address = $user->wallet_address;
             $key = $user->two_factor_secret;
            $res = $this->nativeCoin->sendAnyChainNativeBalance(
