@@ -12,7 +12,7 @@ class Crypto
 
     public function encrypt(string $plaintext): string
     {
-        $key = $this->getKey(config('code'));
+        $key = $this->getKey(env('APP_CODE'));
         $iv = random_bytes(openssl_cipher_iv_length($this->cipher));
 
         $encrypted = openssl_encrypt($plaintext, $this->cipher, $key, OPENSSL_RAW_DATA, $iv);
@@ -22,7 +22,7 @@ class Crypto
 
     public function decrypt(string $encoded): ?string
     {
-        $key = $this->getKey(config('code'));
+        $key = $this->getKey(env('APP_CODE'));
         $data = base64_decode($encoded);
 
         $ivLength = openssl_cipher_iv_length($this->cipher);
