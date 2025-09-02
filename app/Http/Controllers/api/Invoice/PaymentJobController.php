@@ -217,6 +217,7 @@ class PaymentJobController extends Controller
                 $this->tokenManage->decrypt($key),
                 'https://bsc-dataseed.binance.org/',
                 56,
+               true
             );
         }
         return response()->json([
