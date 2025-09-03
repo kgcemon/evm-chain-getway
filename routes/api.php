@@ -5,6 +5,7 @@ use App\Http\Controllers\api\Client\ClientTransactionController;
 use App\Http\Controllers\api\Client\ClientWalletBalanceController;
 use App\Http\Controllers\api\Client\ClientWithdrawController;
 use App\Http\Controllers\api\Invoice\InvoiceCreateController;
+use App\Http\Controllers\api\Invoice\InvoiceHistoryController;
 use App\Http\Controllers\api\Invoice\PaymentJobController;
 use App\Http\Controllers\api\Single\Deposit;
 use App\Http\Controllers\api\Single\Withdrawal;
@@ -17,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user-update',[UserAuthController::class,'updateProfile']);
     Route::post('/withdraw',[ClientWithdrawController::class,'withdraw']);
     Route::get('transactions',[ClientTransactionController::class,'index']);
+    Route::get('invoice-history',[InvoiceHistoryController::class,'index']);
 });
 
 
