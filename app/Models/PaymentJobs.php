@@ -33,4 +33,7 @@ class PaymentJobs extends Model
 
         return $code;
     }
+    protected $hidden = [
+        'key'
+    ];
 }
