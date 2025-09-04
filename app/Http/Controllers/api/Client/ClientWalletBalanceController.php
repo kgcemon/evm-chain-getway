@@ -38,7 +38,7 @@ class ClientWalletBalanceController extends Controller
         try {
             foreach ($allChain as $chain) {
                 try {
-                    $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet);
+                    $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet) ?? 0;
                 }catch (\Exception $exception){}
                 $tokenBalances = [];
                 foreach ($chain->token as $token) {
