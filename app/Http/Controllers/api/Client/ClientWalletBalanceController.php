@@ -20,11 +20,12 @@ class ClientWalletBalanceController extends Controller
     {
         $user = $request->user();
         $wallet = $user->wallet_address;
-        Cache::forget('balance_list_' . $user->id);
         $cacheKey = 'balance_list_' . $user->id;
 
-        $cachedData = Cache::get($cacheKey);
-        if ($cachedData) {
+        // Clear cache if needed
+        Cache::forget($cacheKey);
+
+        if ($cachedData = Cache::get($cacheKey)) {
             return response()->json([
                 'success' => true,
                 'data' => $cachedData,
@@ -35,57 +36,62 @@ class ClientWalletBalanceController extends Controller
         $allChain = ChainList::with('token')->get();
         $list = [];
 
-        try {
-            foreach ($allChain as $chain) {
-                try {
-                    $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet) ?? 0;
-                }catch (\Exception $exception){}
-                $tokenBalances = [];
-                foreach ($chain->token as $token) {
-                    try {
-                        $balance = (float) $this->checkBalance->balance(
-                            $chain->chain_rpc_url,
-                            $wallet,
-                            'token',
-                            $token->contract_address
-                        );
-                    }catch (\Exception $exception){}
+        foreach ($allChain as $chain) {
+            $nativeBalance = 0;
+            $tokenBalances = [];
 
-                    if ($balance > 0 || $token->token_name == 'USDT') {
-                        $tokenBalances[] = [
-                            'id' => $token->id,
-                            'chain_id' => $chain->id,
-                            'name' => $token->token_name ?? '',
-                            'symbol' => $token->symbol ?? '',
-                            'balance' => number_format($balance, 4, '.', ''), // 4 decimal
-                            'icon' => $token->icon ?? null,
-                        ];
-                    }
+            try {
+                // Native balance
+                $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet) ?? 0;
+            } catch (\Exception $exception) {
+                // যদি RPC error দেয়, তাহলে ওই চেইন skip হবে
+                continue;
+            }
+
+            foreach ($chain->token as $token) {
+                $balance = 0;
+                try {
+                    $balance = (float) $this->checkBalance->balance(
+                        $chain->chain_rpc_url,
+                        $wallet,
+                        'token',
+                        $token->contract_address
+                    );
+                } catch (\Exception $exception) {
+                    // এক টোকেন error দিলে ওই টোকেন বাদ যাবে, বাকি গুলো চলবে
+                    continue;
                 }
 
-                if ($nativeBalance > 0 || count($tokenBalances) > 0) {
-                    $list[] = [
-                        'id' => $chain->id,
-                        'chain' => $chain->chain_name,
-                        'icon' => $chain->icon ?? null,
-                        'native_balance' => number_format($nativeBalance, 4, '.', ''),
-                        'tokens' => $tokenBalances,
+                if ($balance > 0 || $token->token_name == 'USDT') {
+                    $tokenBalances[] = [
+                        'id' => $token->id,
+                        'chain_id' => $chain->id,
+                        'name' => $token->token_name ?? '',
+                        'symbol' => $token->symbol ?? '',
+                        'balance' => number_format($balance, 4, '.', ''), // 4 decimal
+                        'icon' => $token->icon ?? null,
                     ];
                 }
             }
 
-            Cache::put($cacheKey, $list, now()->minute(1000));
-
-            return response()->json([
-                'success' => true,
-                'data' => $list,
-            ]);
-        } catch (\Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ]);
+            // শুধুমাত্র যেসব chain এ কিছু balance আছে, সেগুলো return করব
+            if ($nativeBalance > 0 || count($tokenBalances) > 0) {
+                $list[] = [
+                    'id' => $chain->id,
+                    'chain' => $chain->chain_name,
+                    'icon' => $chain->icon ?? null,
+                    'native_balance' => number_format($nativeBalance, 4, '.', ''),
+                    'tokens' => $tokenBalances,
+                ];
+            }
         }
+
+        Cache::put($cacheKey, $list, now()->addMinutes(30));
+
+        return response()->json([
+            'success' => true,
+            'data' => $list,
+        ]);
     }
 
     public function BalanceCheck(Request $request)
