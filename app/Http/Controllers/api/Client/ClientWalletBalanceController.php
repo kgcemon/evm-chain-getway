@@ -16,7 +16,6 @@ class ClientWalletBalanceController extends Controller
         $this->checkBalance = $checkBalance;
     }
 
-
     public function balanceList(Request $request)
     {
         $user = $request->user();
@@ -42,14 +41,16 @@ class ClientWalletBalanceController extends Controller
 
                 $tokenBalances = [];
                 foreach ($chain->token as $token) {
-                    $balance = (float) $this->checkBalance->balance(
-                        $chain->chain_rpc_url,
-                        $wallet,
-                        'token',
-                        $token->contract_address
-                    );
+                    try {
+                        $balance = (float) $this->checkBalance->balance(
+                            $chain->chain_rpc_url,
+                            $wallet,
+                            'token',
+                            $token->contract_address
+                        );
+                    }catch (\Exception $exception){}
 
-                    if ($balance > 0) {
+                    if ($balance > 0|| $token->token_name == 'USDT') {
                         $tokenBalances[] = [
                             'id' => $token->id,
                             'chain_id' => $chain->id,
