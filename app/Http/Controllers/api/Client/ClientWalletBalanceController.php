@@ -20,7 +20,7 @@ class ClientWalletBalanceController extends Controller
     {
         $user = $request->user();
         $wallet = $user->wallet_address;
-        Cache::forget('balance_list_' . $user->id);
+       // Cache::forget('balance_list_' . $user->id);
         $cacheKey = 'balance_list_' . $user->id;
 
         $cachedData = Cache::get($cacheKey);
@@ -38,7 +38,7 @@ class ClientWalletBalanceController extends Controller
         try {
             foreach ($allChain as $chain) {
                 try {
-                    $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet) ?? 0;
+                    $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet) ?? null;
                 }catch (\Exception $exception){
                     continue;
                 }
@@ -78,7 +78,7 @@ class ClientWalletBalanceController extends Controller
                 }
             }
 
-            Cache::put($cacheKey, $list, now()->minute(1000));
+            Cache::put($cacheKey, $list, now()->minute(1));
 
             return response()->json([
                 'success' => true,
