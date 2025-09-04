@@ -37,8 +37,9 @@ class ClientWalletBalanceController extends Controller
 
         try {
             foreach ($allChain as $chain) {
-                $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet);
-
+                try {
+                    $nativeBalance = (float) $this->checkBalance->balance($chain->chain_rpc_url, $wallet);
+                }catch (\Exception $exception){}
                 $tokenBalances = [];
                 foreach ($chain->token as $token) {
                     try {
@@ -50,7 +51,7 @@ class ClientWalletBalanceController extends Controller
                         );
                     }catch (\Exception $exception){}
 
-                    if ($balance > 0|| $token->token_name == 'USDT') {
+                    if ($balance > 0 || $token->token_name == 'USDT') {
                         $tokenBalances[] = [
                             'id' => $token->id,
                             'chain_id' => $chain->id,
