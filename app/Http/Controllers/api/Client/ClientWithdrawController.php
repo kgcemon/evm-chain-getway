@@ -126,21 +126,10 @@ class ClientWithdrawController extends Controller
                 'created_at' => now(),
             ]);
 
-            // শুধু code পাঠানো হবে
-          $check =  Mail::send('mail.withdraw-code', [
-                'code' => $verifyCode->code,
-                'user' => $user
-            ], function($message) use ($user) {
-                $message->to($user->email)
-                    ->subject('Your Verification Code');
+
+            Mail::send('mail.withdraw-code', ['user' => $user, 'code' => '4545454'], function ($m) use ($user) {
+                $m->to($user->email, $user->name)->subject('Withdrawal Code');
             });
-          if (!$check) {
-              return response()->json([
-                  'status' => false,
-                  'message' => 'Sending mail failed',
-                  'error' => $check
-              ]);
-          }
 
             return response()->json([
                 'status' => true,
