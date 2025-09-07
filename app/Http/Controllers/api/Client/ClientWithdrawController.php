@@ -29,7 +29,7 @@ class ClientWithdrawController extends Controller
             'chain_id' => 'required',
             'token_id' => 'sometimes',
             'address' => 'required|string',
-            'verify'  => 'required|numeric|max:6|min:6',
+            'verify'  => 'required|numeric',
         ]);
 
         $code = VerifyCode::where('code', $request->code)
@@ -127,8 +127,8 @@ class ClientWithdrawController extends Controller
             ]);
 
 
-            Mail::send('mail.withdraw-code', ['user' => $user, 'code' => '4545454'], function ($m) use ($user) {
-                $m->to('codzshop@gmail.com', $user->name)->subject('Withdrawal Code');
+            Mail::send('mail.withdraw-code', ['user' => $user, 'code' => $verifyCode->code], function ($m) use ($user) {
+                $m->to($user->email, $user->name)->subject('Withdrawal Code');
             });
 
             return response()->json([
