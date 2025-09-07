@@ -10,6 +10,7 @@ use App\Services\NativeCoin;
 use App\Services\TokenManage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 
 
 class ClientWithdrawController extends Controller
@@ -111,6 +112,26 @@ class ClientWithdrawController extends Controller
                 'message' => 'Withdrawal failed: ' . $e->getMessage(),
             ]);
         }
+    }
+
+
+    public function sendWithdrawCode(Request $request)
+    {
+        $user = $request->user();
+       $code =  VerifyCode::create([
+            'code' => random_int(100000, 999999),
+            'user_id' => $user->id,
+            'created_at' => now(),
+        ]);
+
+        Mail::send('mail.withdraw-code', ['code' => $code, 'user' => $user], function($message) use ($user) {
+            $message->to($user->email)
+                ->subject('Your Verification Code');
+        });
+        return response()->json([
+            'status' => true,
+            'message' => 'Withdrawal code sent',
+        ]);
     }
 
 }

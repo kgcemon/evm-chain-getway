@@ -18,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user',[UserAuthController::class,'profile']);
     Route::post('/user-update',[UserAuthController::class,'updateProfile']);
     Route::post('/withdraw',[ClientWithdrawController::class,'withdraw']);
+    Route::post('/send-withdraw-code',[ClientWithdrawController::class,'sendWithdrawCode']);
     Route::get('transactions',[ClientTransactionController::class,'index']);
     Route::get('invoice-history',[InvoiceHistoryController::class,'index']);
 });
