@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChainList;
 use App\Models\TokenList;
 use App\Models\Transactions;
+use App\Models\VerifyCode;
 use App\Services\NativeCoin;
 use App\Services\TokenManage;
 use Illuminate\Http\Request;
@@ -27,7 +28,22 @@ class ClientWithdrawController extends Controller
             'chain_id' => 'required',
             'token_id' => 'sometimes',
             'address' => 'required|string',
+            'verify'  => 'required|numeric|max:6|min:6',
         ]);
+
+        $code = VerifyCode::where('code', $request->code)
+            ->where('created_at', '>=', now()->subMinute())
+            ->where('status', 0)->first();
+
+        if (!$code) {
+            return response()->json([
+                'status' => false,
+                'message' => 'please give me valid code',
+            ]);
+        }
+
+        $code->status = 1;
+        $code->save();
 
         $user = $request->user();
         $chain = ChainList::where('id', $validated['chain_id'])->first();

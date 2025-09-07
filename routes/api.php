@@ -11,6 +11,7 @@ use App\Http\Controllers\api\Single\Deposit;
 use App\Http\Controllers\api\Single\Withdrawal;
 use App\Services\CreateWallet;
 use Illuminate\Support\Facades\Route;
+
 //client
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('my-balance',[ClientWalletBalanceController::class,'balanceList']);
