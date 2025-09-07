@@ -131,6 +131,13 @@ class ClientWithdrawController extends Controller
                 $m->to($user->email, $user->name)->subject('Withdrawal Code');
             });
 
+            if (count(Mail::failures()) > 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Mail sending failed',
+                ]);
+            }
+
             return response()->json([
                 'status' => true,
                 'message' => 'Withdrawal code sent',
