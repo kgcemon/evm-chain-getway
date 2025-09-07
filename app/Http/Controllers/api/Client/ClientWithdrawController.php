@@ -119,26 +119,33 @@ class ClientWithdrawController extends Controller
     {
         try {
             $user = $request->user();
-            $code =  VerifyCode::create([
+
+            $verifyCode = VerifyCode::create([
                 'code' => random_int(100000, 999999),
                 'user_id' => $user->id,
                 'created_at' => now(),
             ]);
 
-            Mail::send('mail.withdraw-code', ['code' => $code, 'user' => $user], function($message) use ($user) {
+            // শুধু code পাঠানো হবে
+            Mail::send('mail.withdraw-code', [
+                'code' => $verifyCode->code,
+                'user' => $user
+            ], function($message) use ($user) {
                 $message->to($user->email)
                     ->subject('Your Verification Code');
             });
+
             return response()->json([
                 'status' => true,
                 'message' => 'Withdrawal code sent',
             ]);
-        }catch (\Throwable $e){
+        } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
             ]);
         }
     }
+
 
 }
