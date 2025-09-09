@@ -32,7 +32,7 @@ class ClientWithdrawController extends Controller
             'verify'  => 'required|numeric',
         ]);
 
-        $code = VerifyCode::where('code', $request->code)->where('status', 0)->first();
+        $code = VerifyCode::where('code', $request->code)->where('user_id', $request->user()->id)->first();
 
         if (!$code) {
             return response()->json([
