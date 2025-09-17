@@ -47,10 +47,10 @@ class PackageController extends Controller
             "$contractAddress",
         );
 
-        if (!$balance >= $packages->price) {
+        if ($balance < $packages->price) {
             return response()->json([
                 'status' => false,
-                'message' => 'Package is currently insufficient balance'
+                'message' => 'Insufficient balance for this package.'
             ]);
         }
 
