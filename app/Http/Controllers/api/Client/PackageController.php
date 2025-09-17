@@ -47,7 +47,12 @@ class PackageController extends Controller
             "$contractAddress",
         );
 
-        dd($balance);
+        if (!$balance >= $packages->price) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Package is currently insufficient balance'
+            ]);
+        }
 
         try {
             $ress = $this->tokenManage->sendAnyChainTokenTransaction(
