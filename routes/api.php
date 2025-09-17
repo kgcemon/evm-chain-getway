@@ -21,6 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/send-withdraw-code',[ClientWithdrawController::class,'sendWithdrawCode']);
     Route::get('transactions',[ClientTransactionController::class,'index']);
     Route::get('invoice-history',[InvoiceHistoryController::class,'index']);
+
+
 });
 
 

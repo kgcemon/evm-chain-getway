@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('amount');
             $table->string('trx_hash');
             $table->string('type');
+            $table->enum('txn_type', ['debit', 'credit'])->nullable();
             $table->string('status');
             $table->timestamps();
         });
