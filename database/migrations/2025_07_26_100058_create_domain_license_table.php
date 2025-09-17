@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\DomainLicense;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -22,6 +24,18 @@ return new class extends Migration
             $table->dateTime('expires_at');
             $table->timestamps();
         });
+    }
+
+    public function generateLicenseKey(int $length = 25): string
+    {
+        do {
+            $key = strtoupper(Str::random($length));
+
+            $key = substr(chunk_split($key, 5, '-'), 0, -1);
+
+        } while (DomainLicense::where('license_key', $key)->exists());
+
+        return $key;
     }
 
     /**
