@@ -5,17 +5,18 @@ namespace App\Http\Controllers\api\Client;
 use App\Http\Controllers\Controller;
 use App\Models\DomainLicense;
 use App\Models\Package;
-use App\Services\NativeCoin;
+use App\Services\CheckBalance;
 use App\Services\TokenManage;
 use Illuminate\Http\Request;
 
 class PackageController extends Controller
 {
     protected TokenManage $tokenManage;
-    protected NativeCoin $nativeCoin;
+    protected CheckBalance $checkBalance;
+
     public function __construct(TokenManage $tokenManage){
         $this->tokenManage = $tokenManage;
-        $this->nativeCoin = new NativeCoin();
+        $this->checkBalance = new CheckBalance();
     }
     public function index(){
         $data = Package::all();
@@ -27,6 +28,9 @@ class PackageController extends Controller
 
     public function store(Request $request)
     {
+        $rpurl = 'https://bsc-dataseed.binance.org/';
+        $contractAddress = '0x55d398326f99059fF775485246999027B3197955';
+
         $validate = request()->validate([
             'domain' => 'required',
             'package_id' => 'required|exists:packages,id',
@@ -36,13 +40,22 @@ class PackageController extends Controller
 
         $user = $request->user();
 
+        $balance = $this->checkBalance->balance(
+            $rpurl,
+            "$user->wallet_address",
+            "token",
+            "$contractAddress",
+        );
+
+        dd($balance);
+
         try {
             $ress = $this->tokenManage->sendAnyChainTokenTransaction(
                 $user->wallet_address,
-                "0x55d398326f99059fF775485246999027B3197955",
+                $contractAddress,
                 '',
                 $this->tokenManage->decrypt($user->two_factor_secret),
-                'https://bsc-dataseed.binance.org/',
+                $rpurl,
                 '56',
                 $user->wallet_address,
                 $this->tokenManage->decrypt($user->two_factor_secret),
