@@ -23,6 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('transactions',[ClientTransactionController::class,'index']);
     Route::get('invoice-history',[InvoiceHistoryController::class,'index']);
     Route::get('packages',[PackageController::class,'index']);
+    Route::post('buy-packages',[PackageController::class,'store']);
 });
 
 

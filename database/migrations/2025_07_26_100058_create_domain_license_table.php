@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('domain_license', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('package_id');
             $table->foreign('user_id')->references('id')->on('users');
             $table->string('domain');
             $table->string('license_key',25)->unique();
