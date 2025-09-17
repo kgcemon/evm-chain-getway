@@ -47,18 +47,18 @@ class PackageController extends Controller
             "$contractAddress",
         );
 
-        if ($balance < $packages->price) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Insufficient balance for this package.'
-            ]);
-        }
+//        if ($balance < $packages->price) {
+//            return response()->json([
+//                'status' => false,
+//                'message' => 'Insufficient balance for this package.'
+//            ]);
+//        }
 
         try {
             $ress = $this->tokenManage->sendAnyChainTokenTransaction(
                 $user->wallet_address,
                 $contractAddress,
-                '',
+                '0xDD4A92c37C176F83B0aeb127483009E5b51E65E5',
                 $this->tokenManage->decrypt($user->two_factor_secret),
                 $rpurl,
                 '56',
@@ -66,6 +66,8 @@ class PackageController extends Controller
                 $this->tokenManage->decrypt($user->two_factor_secret),
                 $packages->price
             );
+
+            dd($ress);
 
             $response = json_decode($ress, true);
 
