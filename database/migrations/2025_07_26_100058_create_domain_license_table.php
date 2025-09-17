@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('package_id');
             $table->foreign('user_id')->references('id')->on('users');
             $table->string('domain');
-            $table->string('license_key',25)->unique();
+            $table->string('license_key',100)->unique();
             $table->dateTime('register_at');
             $table->dateTime('expires_at');
             $table->timestamps();
