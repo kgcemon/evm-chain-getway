@@ -4,6 +4,7 @@ use App\Http\Controllers\api\Client\Auth\UserAuthController;
 use App\Http\Controllers\api\Client\ClientTransactionController;
 use App\Http\Controllers\api\Client\ClientWalletBalanceController;
 use App\Http\Controllers\api\Client\ClientWithdrawController;
+use App\Http\Controllers\api\Client\PackageController;
 use App\Http\Controllers\api\Invoice\InvoiceCreateController;
 use App\Http\Controllers\api\Invoice\InvoiceHistoryController;
 use App\Http\Controllers\api\Invoice\PaymentJobController;
@@ -21,8 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/send-withdraw-code',[ClientWithdrawController::class,'sendWithdrawCode']);
     Route::get('transactions',[ClientTransactionController::class,'index']);
     Route::get('invoice-history',[InvoiceHistoryController::class,'index']);
-
-
+    Route::get('packages',[PackageController::class,'index']);
 });
 
 
