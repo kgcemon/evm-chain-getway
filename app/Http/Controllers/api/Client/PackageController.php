@@ -67,7 +67,6 @@ class PackageController extends Controller
                 $packages->price
             );
 
-            dd($ress);
 
             $response = json_decode($ress, true);
 
