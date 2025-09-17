@@ -74,6 +74,8 @@ class PackageController extends Controller
                     'user_id' => $user->id,
                     'package_id' => $validate['package_id'],
                     'domain' => $validate['domain'],
+                    'register_at' => now(),
+                    'expires_at' => now()->addMonth(),
                 ]);
                 return response()->json([
                     'status' => true,
