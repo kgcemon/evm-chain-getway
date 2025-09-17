@@ -68,9 +68,8 @@ class PackageController extends Controller
             );
 
 
-            $response = json_decode($ress, true);
 
-            if ($response['status']) {
+            if ($ress['status']) {
                 DomainLicense::create([
                     'user_id' => $user->id,
                     'package_id' => $validate['package_id'],
