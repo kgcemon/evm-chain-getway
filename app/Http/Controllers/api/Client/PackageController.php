@@ -80,7 +80,7 @@ class PackageController extends Controller
                 ]);
                 Transactions::create([
                     'user_id'    => $user->id,
-                    'chain_id'   => 56,
+                    'chain_id'   => 2,
                     'amount'     => $ress['amount'],
                     'trx_hash'   => $ress['txHash'],
                     'type'       => 'credit',
