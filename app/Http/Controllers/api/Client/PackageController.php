@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\Client;
 use App\Http\Controllers\Controller;
 use App\Models\DomainLicense;
 use App\Models\Package;
+use App\Models\Transactions;
 use App\Services\CheckBalance;
 use App\Services\TokenManage;
 use Illuminate\Http\Request;
@@ -76,6 +77,15 @@ class PackageController extends Controller
                     'domain' => $validate['domain'],
                     'register_at' => now(),
                     'expires_at' => now()->addMonth(),
+                ]);
+                Transactions::create([
+                    'user_id'    => $user->id,
+                    'chain_id'   => 56,
+                    'amount'     => $ress['amount'],
+                    'trx_hash'   => $ress['txHash'],
+                    'type'       => 'credit',
+                    'token_name' => 'USDT',
+                    'status'     => $ress['status'],
                 ]);
                 return response()->json([
                     'status' => true,
