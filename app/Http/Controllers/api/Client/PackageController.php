@@ -104,4 +104,13 @@ class PackageController extends Controller
             ]);
         }
     }
+
+    public function license(Request $request){
+        $user = $request->user();
+        $license = DomainLicense::where('user_id', $user->id)->get();
+        return response()->json([
+            'status' => true,
+            'data' => $license
+        ]);
+    }
 }
