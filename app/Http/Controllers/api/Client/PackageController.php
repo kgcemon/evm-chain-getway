@@ -107,7 +107,7 @@ class PackageController extends Controller
 
     public function license(Request $request){
         $user = $request->user();
-        $license = DomainLicense::where('user_id', $user->id)->get();
+        $license = DomainLicense::where('user_id', $user->id)->with('package')->get();
         return response()->json([
             'status' => true,
             'data' => $license

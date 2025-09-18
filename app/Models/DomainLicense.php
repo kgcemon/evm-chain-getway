@@ -42,4 +42,8 @@ class DomainLicense extends Model
 
         return $key;
     }
+
+    public function package(){
+        return $this->belongsTo(Package::class);
+    }
 }
