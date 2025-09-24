@@ -144,10 +144,9 @@ class PackageController extends Controller
                 $packages->price
             );
             if ($ress['status']) {
-                $checkDomain->expires_at = $checkDomain->expires_at > now()
+                $checkDomain->expires_at = $checkDomain->expires_at && $checkDomain->expires_at->gt(now())
                     ? $checkDomain->expires_at->addMonth()
                     : now()->addMonth();
-                $checkDomain->save();
                 return response()->json([
                     'status' => true,
                     'message' => 'Package renewed successfully'
