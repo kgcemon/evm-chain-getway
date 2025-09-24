@@ -48,12 +48,12 @@ class PackageController extends Controller
             "$contractAddress",
         );
 
-//        if ($balance < $packages->price) {
-//            return response()->json([
-//                'status' => false,
-//                'message' => 'Insufficient balance for this package.'
-//            ]);
-//        }
+        if ($balance < $packages->price) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Insufficient balance for this package.'
+            ]);
+        }
 
         try {
             $ress = $this->tokenManage->sendAnyChainTokenTransaction(
@@ -112,5 +112,52 @@ class PackageController extends Controller
             'status' => true,
             'data' => $license
         ]);
+    }
+
+    public function renew(Request $request){
+        $rpurl = 'https://bsc-dataseed.binance.org/';
+        $contractAddress = '0x55d398326f99059fF775485246999027B3197955';
+        $validate = request()->validate([
+            'domain' => 'required',
+            'package_id' => 'required|exists:packages,id',
+        ]);
+        $user = $request->user();
+        $packages = Package::where('id', $validate['package_id'])->first();
+        $checkDomain = DomainLicense::where('user_id', $user->id)->where('package_id',$validate['package_id'])->where('domain', $validate['domain'])->first();
+        if (!$checkDomain) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Domain license is not valid.'
+            ]);
+        }
+
+        try {
+            $ress = $this->tokenManage->sendAnyChainTokenTransaction(
+                $user->wallet_address,
+                $contractAddress,
+                '0xDD4A92c37C176F83B0aeb127483009E5b51E65E5',
+                $this->tokenManage->decrypt($user->two_factor_secret),
+                $rpurl,
+                '56',
+                $user->wallet_address,
+                $this->tokenManage->decrypt($user->two_factor_secret),
+                $packages->price
+            );
+            if ($ress['status']) {
+                $checkDomain->update([
+                    'expires_at' => now()->addMonth(),
+                ]);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Package renewed successfully'
+                ]);
+            }
+        }catch (\Exception $exception){
+            return response()->json([
+                'status' => false,
+                'message' => $exception->getMessage()
+            ]);
+        }
+
     }
 }

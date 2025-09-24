@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('invoice-history',[InvoiceHistoryController::class,'index']);
     Route::get('packages',[PackageController::class,'index']);
     Route::post('buy-packages',[PackageController::class,'store']);
+    Route::post('renew',[PackageController::class,'renew']);
     Route::get('license',[PackageController::class,'license']);
 });
 
