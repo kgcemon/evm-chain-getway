@@ -122,8 +122,8 @@ class PackageController extends Controller
             'package_id' => 'required',
         ]);
         $user = $request->user();
-        $packages = Package::where('id', $validate['package_id'])->first();
-        $checkDomain = DomainLicense::where('user_id', $user->id)->where('package_id',$validate['package_id'])->where('domain', $validate['domain'])->first();
+        $packages = Package::where('id', $request->input('package_id'))->first();
+        $checkDomain = DomainLicense::where('package_id',$request->input('package_id'))->where('user_id', $user->id)->where('domain', $request->input('domain'))->first();
         if (!$checkDomain) {
             return response()->json([
                 'status' => false,
