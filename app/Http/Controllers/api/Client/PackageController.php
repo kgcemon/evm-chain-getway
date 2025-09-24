@@ -119,7 +119,7 @@ class PackageController extends Controller
         $contractAddress = '0x55d398326f99059fF775485246999027B3197955';
         $validate = request()->validate([
             'domain' => 'required',
-            'package_id' => 'required|exists:packages,id',
+            'package_id' => 'required',
         ]);
         $user = $request->user();
         $packages = Package::where('id', $validate['package_id'])->first();
