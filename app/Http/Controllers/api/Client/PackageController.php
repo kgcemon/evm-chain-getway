@@ -8,6 +8,7 @@ use App\Models\Package;
 use App\Models\Transactions;
 use App\Services\CheckBalance;
 use App\Services\TokenManage;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PackageController extends Controller
@@ -144,7 +145,7 @@ class PackageController extends Controller
                 $packages->price
             );
             if ($ress['status']) {
-                $expiresAt = $checkDomain->expires_at;
+                $expiresAt = $checkDomain->expires_at ? Carbon::parse($checkDomain->expires_at) : null;
 
                 if ($expiresAt && $expiresAt->isFuture()) {
                     $checkDomain->expires_at = $expiresAt->addMonth();
