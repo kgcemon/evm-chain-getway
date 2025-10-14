@@ -28,9 +28,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('license',[PackageController::class,'license']);
 });
 
-
-
-
 //auth
 Route::post('create-account', [UserAuthController::class, 'createAccount']);
 Route::post('create-login', [UserAuthController::class, 'login']);
