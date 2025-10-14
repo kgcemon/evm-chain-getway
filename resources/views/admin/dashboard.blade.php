@@ -22,10 +22,17 @@
 
                     @php
                         $users = [
-                             ['label' => 'Total USDT', 'value' => $dashboardData['totalUsddtTrx'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
+                             ['label' => 'Total USDT', 'value' => $dashboardData['totalUsddtTrx'], 'icon' => 'fas fa-dollar-sign', 'bg' => 'bg-success'],
                              ['label' => 'Today Transaction', 'value' => $dashboardData['today_trx'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
                             ['label' => 'Total Transaction', 'value' => $dashboardData['totalTrx'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
                              ['label' => 'Total Customers', 'value' => $dashboardData['totalCustomer'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
+
+                             ['label' => 'Total Coin', 'value' => $dashboardData['totalCoin'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
+                             ['label' => 'Total Network', 'value' => $dashboardData['totalChain'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
+
+
+                             ['label' => 'Total License', 'value' => $dashboardData['totalLicense'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
+                             ['label' => 'Expire License', 'value' => $dashboardData['expireLicense'], 'icon' => 'fas fa-user', 'bg' => 'bg-success'],
                         ];
                     @endphp
 

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChainList;
+use App\Models\DomainLicense;
 use App\Models\PaymentJobs;
+use App\Models\TokenList;
 use App\Models\Transactions;
 use App\Models\User;
 
@@ -27,6 +30,10 @@ class DashboardController extends Controller
             'today_trx' => $todayTransaction+$todayJobTransaction,
             'totalCustomer' => User::count(),
             'totalTrx' => $totalTrx+$totalJobTrx,
+            'totalCoin' => TokenList::all()->count(),
+            'totalChain' => ChainList::all()->count(),
+            'totalLicense' => DomainLicense::all()->count(),
+            'expireLicense' => DomainLicense::where('expires_at','<',now()->toDateString())->count(),
         ];
 
         return view('admin.dashboard', compact('dashboardData'));
