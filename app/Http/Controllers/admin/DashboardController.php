@@ -3,17 +3,33 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PaymentJobs;
 use App\Models\Transactions;
 use App\Models\User;
 
 class DashboardController extends Controller
 {
-    public function index(){
-        $totalTrx = Transactions::all()->count();
+    public function index()
+    {
+        // মোট ট্রানজাকশন
+        $totalTrx = Transactions::count();
+        $totalJobTrx = PaymentJobs::count();
+
+        $TotalUsdtTrx = Transactions::where('token_name','USDT')->where('status',1)->sum('amount');
+        $TotalUsdtTrx += PaymentJobs::where('token_name','USDT')->where('status','completed')->sum('amount');
+
+        // আজকের ট্রানজাকশন সংখ্যা
+        $todayTransaction = Transactions::whereDate('created_at', now()->toDateString())->count();
+        $todayJobTransaction = PaymentJobs::whereDate('created_at', now()->toDateString())->count();
+        // ড্যাশবোর্ড ডেটা অ্যারে
         $dashboardData = [
-            'totalCustomer' => User::all()->count(),
-            'totalTrx' => $totalTrx,
+            'totalUsddtTrx' => $TotalUsdtTrx,
+            'today_trx' => $todayTransaction+$todayJobTransaction,
+            'totalCustomer' => User::count(),
+            'totalTrx' => $totalTrx+$totalJobTrx,
         ];
+
         return view('admin.dashboard', compact('dashboardData'));
     }
+
 }
