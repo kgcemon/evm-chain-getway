@@ -48,7 +48,7 @@
 
                 <!-- Plans -->
                 <li class="nav-item {{ Str::contains(request()->path(), 'all-plan') ? 'active' : '' }}">
-                    <a href="/all-plan">
+                    <a href="/admin/packages">
                         <i class="fas fa-database"></i>
                         <p>All Plans</p>
                     </a>
