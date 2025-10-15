@@ -5,7 +5,7 @@
         <!-- Logo Header -->
         <div class="logo-header" data-background-color="dark">
             <a href="/admin/dashboard" class="logo">
-                <img src="https://yeldo-front-puce.vercel.app/_next/static/media/logo.beb988fc.png" alt="App Name" class="navbar-brand" height="20">
+                <img src="/logo.png" alt="App Name" class="navbar-brand" height="20">
             </a>
             <div class="nav-toggle">
                 <button class="btn btn-toggle toggle-sidebar">
@@ -37,7 +37,7 @@
 
                 <!-- Users -->
                 <li class="nav-item {{ request()->is('users') ? 'active' : '' }}">
-                    <a href="/users">
+                    <a href="/admin/users">
                         <i class="fas fa-users"></i>
                         <p>All Users</p>
                     </a>

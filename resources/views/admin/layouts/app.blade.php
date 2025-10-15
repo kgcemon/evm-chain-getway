@@ -5,7 +5,8 @@
 	<title>{{ $generalSettings->app_name ?? 'petroxcin admin panel' }}</title>
 	<meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="icon" href="https://www.petroxcin.com/_next/static/media/logo.beb988fc.png">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="icon" href="/logo.png">
 
     {{--	<link rel="icon" href="{{ Storage::url($generalSettings->favicon) ?? asset('default_favicon.ico') }}">--}}
 {{--    <link rel="apple-touch-icon" href="{{ Storage::url($generalSettings->favicon) ?? asset('default_favicon.ico') }}">--}}
