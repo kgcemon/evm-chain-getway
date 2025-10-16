@@ -36,7 +36,7 @@
 
 
                 <!-- Users -->
-                <li class="nav-item {{ request()->is('users') ? 'active' : '' }}">
+                <li class="nav-item {{ request()->is('admin/users') ? 'active' : '' }}">
                     <a href="/admin/users">
                         <i class="fas fa-users"></i>
                         <p>All Users</p>
@@ -47,7 +47,7 @@
 
 
                 <!-- Plans -->
-                <li class="nav-item {{ Str::contains(request()->path(), 'all-plan') ? 'active' : '' }}">
+                <li class="nav-item {{ Str::contains(request()->path(), 'packages') ? 'active' : '' }}">
                     <a href="/admin/packages">
                         <i class="fas fa-database"></i>
                         <p>All Plans</p>

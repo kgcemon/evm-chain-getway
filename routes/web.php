@@ -3,6 +3,7 @@
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\PackageController;
 use App\Http\Controllers\admin\ProfileController;
+use App\Http\Controllers\admin\TransactionController;
 use App\Http\Controllers\admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::post('packages', [PackageController::class, 'store'])->name('packages.store');
     Route::put('packages/{package}', [PackageController::class, 'update'])->name('packages.update');
     Route::delete('packages/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
+
+
+    Route::get('/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
+    Route::put('/transactions/{id}', [TransactionController::class, 'update'])->name('admin.transactions.update');
+
 });
 
 require __DIR__.'/auth.php';
