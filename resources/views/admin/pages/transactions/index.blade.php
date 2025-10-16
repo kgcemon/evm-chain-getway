@@ -77,7 +77,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Amount</label>
-                            <input type="number" id="editTrxAmount" class="form-control" required>
+                            <input type="text" id="editTrxAmount" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
