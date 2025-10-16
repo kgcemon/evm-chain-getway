@@ -31,8 +31,8 @@
                         <td class="trx-token">{{ $trx->token_name }}</td>
                         <td class="trx-type">{{ ucfirst($trx->type) }}</td>
                         <td>
-                            <span class="badge {{ $trx->status == 'completed' ? 'bg-success' : ($trx->status == 'pending' ? 'bg-warning' : 'bg-danger') }}">
-                                {{ ucfirst($trx->status) }}
+                            <span class="badge {{ $trx->status == 1 ? 'bg-success' : ($trx->status == 'pending' ? 'bg-warning' : 'bg-danger') }}">
+                                {{ ucfirst($trx->status ==1 ? 'completed' : 'pending') }}
                             </span>
                         </td>
                         <td>
