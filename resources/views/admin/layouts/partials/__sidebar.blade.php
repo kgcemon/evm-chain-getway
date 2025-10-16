@@ -66,8 +66,8 @@
 
 
                 <!-- Transactions -->
-                <li class="nav-item {{ request()->is('transactions') ? 'active' : '' }}">
-                    <a href="/transactions">
+                <li class="nav-item {{ request()->is('/admin/transactions') ? 'active' : '' }}">
+                    <a href="/admin/transactions">
                         <i class="fas fa-money-check"></i>
                         <p>Transactions</p>
                     </a>
