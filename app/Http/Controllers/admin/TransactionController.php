@@ -9,11 +9,33 @@ use Illuminate\Http\Request;
 class TransactionController extends Controller
 {
     // 🟢 Show all transactions
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = Transactions::with('user')->latest()->paginate(10);
-        return view('admin.pages.transactions.index', compact('transactions'));
+        $query = Transactions::with('user')->orderBy('created_at', 'desc');
+
+        if ($request->filled('username')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->username . '%');
+            });
+        }
+
+        if ($request->filled('token')) {
+            $query->where('token_name', 'like', '%' . $request->token . '%');
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        $transactions = $query->paginate(20);
+
+        return view('admin.transactions.index', compact('transactions'));
     }
+
 
     // 🟢 Update transaction
     public function update(Request $request, $id)

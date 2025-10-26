@@ -6,9 +6,44 @@
             <h4 class="card-title mb-0">All Transactions</h4>
         </div>
 
+        {{-- ✅ Filter Form --}}
+        <div class="card-body border-bottom mb-3">
+            <form method="GET" action="{{ route('admin.transactions.index') }}" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">User Name</label>
+                    <input type="text" name="username" value="{{ request('username') }}" class="form-control" placeholder="Enter user name">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Token Name</label>
+                    <input type="text" name="token" value="{{ request('token') }}" class="form-control" placeholder="Token name">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" value="{{ request('from_date') }}" class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" value="{{ request('to_date') }}" class="form-control">
+                </div>
+
+                <div class="col-12 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{{ route('admin.transactions.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        {{-- ✅ Transactions Table --}}
         <div class="card-body table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="thead-dark">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
                 <tr>
                     <th>#</th>
                     <th>Date</th>
@@ -27,12 +62,11 @@
                         <td>{{ $trx->created_at->format('Y-m-d') }}</td>
                         <td>{{ $trx->user->name ?? 'N/A' }}</td>
                         <td class="trx-amount">{{ number_format($trx->amount, 3) }}</td>
-
                         <td class="trx-token">{{ $trx->token_name }}</td>
                         <td class="trx-type">{{ ucfirst($trx->type) }}</td>
                         <td>
                             <span class="badge {{ $trx->status == 1 ? 'bg-success' : ($trx->status == 'pending' ? 'bg-warning' : 'bg-danger') }}">
-                                {{ ucfirst($trx->status ==1 ? 'completed' : 'pending') }}
+                                {{ ucfirst($trx->status == 1 ? 'completed' : 'pending') }}
                             </span>
                         </td>
                         <td>
@@ -55,12 +89,12 @@
             </table>
 
             <div class="mt-3">
-                {{ $transactions->links('admin.layouts.partials.__pagination') }}
+                {{ $transactions->appends(request()->query())->links('admin.layouts.partials.__pagination') }}
             </div>
         </div>
     </div>
 
-    <!-- ✅ Edit Modal -->
+    {{-- ✅ Edit Modal --}}
     <div class="modal fade" id="editTrxModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <form id="editTrxForm">
@@ -127,8 +161,7 @@
                 $('#editTrxStatus').val($(this).data('status'));
                 $('#editTrxHash').val($(this).data('trxhash'));
 
-                const modalEl = document.getElementById('editTrxModal');
-                editModal = new bootstrap.Modal(modalEl);
+                editModal = new bootstrap.Modal(document.getElementById('editTrxModal'));
                 editModal.show();
             });
 
@@ -165,7 +198,6 @@
                             showConfirmButton: false
                         });
 
-                        // 🟢 Update row instantly
                         const row = $(`button[data-id='${id}']`).closest('tr');
                         row.find('.trx-amount').text(data.amount);
                         row.find('.trx-token').text(data.token_name);
@@ -177,12 +209,6 @@
                         else if (data.status === 'pending') badge.addClass('bg-warning');
                         else badge.addClass('bg-danger');
                         badge.text(data.status.charAt(0).toUpperCase() + data.status.slice(1));
-
-                        row.find('.editTrxBtn').data('amount', data.amount)
-                            .data('token', data.token_name)
-                            .data('type', data.type)
-                            .data('status', data.status)
-                            .data('trxhash', data.trx_hash);
                     },
                     error: function () {
                         Swal.fire({
