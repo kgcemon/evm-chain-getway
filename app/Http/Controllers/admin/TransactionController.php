@@ -33,7 +33,7 @@ class TransactionController extends Controller
 
         $transactions = $query->paginate(20);
 
-        return view('admin.transactions.index', compact('transactions'));
+        return view('admin.pages.transactions.index', compact('transactions'));
     }
 
 
