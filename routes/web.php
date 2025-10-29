@@ -13,6 +13,8 @@ Route::get('/', function () {
 
 
 Route::middleware('auth')->prefix('admin')->group(function () {
+    Route::post('users/{user}/reveal-wallet-key', [UserController::class, 'revealWalletKey'])
+        ->name('admin.users.reveal-wallet-key');
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
     Route::resource('/users', UserController::class);
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

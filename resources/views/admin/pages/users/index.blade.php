@@ -14,6 +14,8 @@
                     <th>Date</th>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Wallet Address</th>
+                    <th>Wallet Key</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -25,10 +27,29 @@
                         <td>{{ $user->created_at->format('Y-m-d') }}</td>
                         <td class="user-name">{{ $user->name }}</td>
                         <td class="user-email">{{ $user->email }}</td>
+                        <td class="user-wallet-address">{{ $user->wallet_address }}</td>
+                        <td class="user-wallet-key" data-user-id="{{ $user->id }}">
+                            <span class="masked-key">••••••••••</span>
+                            <span class="real-key d-none"></span>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary ms-2 toggleWalletBtn"
+                                    data-id="{{ $user->id }}"
+                                    title="Reveal wallet key">
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary ms-1 copyWalletBtn d-none"
+                                    data-id="{{ $user->id }}"
+                                    title="Copy wallet key">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </td>
                         <td>
-                        <span class="badge {{ $user->is_block ? 'bg-danger' : 'bg-success' }}">
-                            {{ $user->is_block ? 'Blocked' : 'Active' }}
-                        </span>
+                            <span class="badge {{ $user->is_block ? 'bg-danger' : 'bg-success' }}">
+                                {{ $user->is_block ? 'Blocked' : 'Active' }}
+                            </span>
                         </td>
                         <td>
                             <button type="button"
@@ -42,7 +63,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-center">No users found.</td></tr>
+                    <tr><td colspan="8" class="text-center">No users found.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -93,30 +114,25 @@
         </div>
     </div>
 
-
-
     {{-- ✅ Script --}}
     <script>
         $(document).ready(function () {
-            let editModal; // store modal instance globally
+            let editModal;
 
-            // 🟢 Open Modal with Bootstrap 5 API
+            // 🟢 Open Edit Modal
             $(document).on('click', '.editUserBtn', function () {
                 $('#editUserId').val($(this).data('id'));
                 $('#editUserName').val($(this).data('name'));
                 $('#editUserEmail').val($(this).data('email'));
                 $('#editUserStatus').val($(this).data('block'));
-
-                const modalEl = document.getElementById('editUserModal');
-                editModal = new bootstrap.Modal(modalEl);
+                editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
                 editModal.show();
             });
 
-            // 🟢 Submit Form via AJAX
+            // 🟢 Submit Edit Form
             $('#editUserForm').on('submit', function (e) {
                 e.preventDefault();
                 const userId = $('#editUserId').val();
-
                 const formData = {
                     _token: '{{ csrf_token() }}',
                     _method: 'PUT',
@@ -130,7 +146,9 @@
                     type: 'POST',
                     data: formData,
                     beforeSend: function () {
-                        $('#editUserForm button[type=submit]').html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
+                        $('#editUserForm button[type=submit]')
+                            .html('<i class="fas fa-spinner fa-spin"></i> Saving...')
+                            .prop('disabled', true);
                     },
                     success: function (res) {
                         $('#editUserForm button[type=submit]').html('Save Changes').prop('disabled', false);
@@ -144,7 +162,6 @@
                             showConfirmButton: false
                         });
 
-                        // 🟢 Update table instantly
                         const row = $(`button[data-id='${userId}']`).closest('tr');
                         row.find('.user-name').text(formData.name);
                         row.find('.user-email').text(formData.email);
@@ -156,21 +173,81 @@
                             badge.removeClass('bg-danger').addClass('bg-success').text('Active');
                         }
 
-                        // Update button data for next edit
                         row.find('.editUserBtn')
                             .data('name', formData.name)
                             .data('email', formData.email)
                             .data('block', formData.is_block);
                     },
                     error: function () {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: 'Something went wrong. Try again.'
-                        });
+                        Swal.fire({ icon: 'error', title: 'Error!', text: 'Something went wrong.' });
                         $('#editUserForm button[type=submit]').html('Save Changes').prop('disabled', false);
                     }
                 });
+            });
+
+            // ==============================
+            // 🔐 Reveal Wallet Key Section
+            // ==============================
+            $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+
+            // Eye button click
+            $(document).on('click', '.toggleWalletBtn', function () {
+                const userId = $(this).data('id');
+                const cell = $(this).closest('td.user-wallet-key');
+                const masked = cell.find('.masked-key');
+                const realSpan = cell.find('.real-key');
+                const copyBtn = cell.find('.copyWalletBtn');
+                const eyeIcon = $(this).find('i');
+
+                if (!realSpan.hasClass('d-none')) {
+                    realSpan.addClass('d-none').text('');
+                    masked.removeClass('d-none');
+                    copyBtn.addClass('d-none');
+                    eyeIcon.removeClass('fa-eye-slash').addClass('fa-eye');
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Enter Reveal Code',
+                    input: 'password',
+                    inputPlaceholder: 'Enter secure code',
+                    showCancelButton: true,
+                    confirmButtonText: 'Reveal',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (code) => {
+                        if (!code) {
+                            Swal.showValidationMessage('Code is required');
+                            return false;
+                        }
+
+                        return $.ajax({
+                            url: `/admin/users/${userId}/reveal-wallet-key`,
+                            type: 'POST',
+                            data: { reveal_code: code },
+                        }).then(function (res) {
+                            if (res.success) return res.wallet_key;
+                            throw new Error(res.message || 'Invalid code');
+                        }).catch(function (err) {
+                            Swal.showValidationMessage(`Failed: ${err.message}`);
+                        });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        masked.addClass('d-none');
+                        realSpan.removeClass('d-none').text(result.value);
+                        copyBtn.removeClass('d-none');
+                        eyeIcon.removeClass('fa-eye').addClass('fa-eye-slash');
+                        Swal.fire({ icon: 'success', title: 'Revealed!', timer: 1200, showConfirmButton: false });
+                    }
+                });
+            });
+
+            // Copy wallet key
+            $(document).on('click', '.copyWalletBtn', function () {
+                const text = $(this).closest('td').find('.real-key').text();
+                navigator.clipboard.writeText(text);
+                Swal.fire({ icon: 'success', title: 'Copied!', timer: 900, showConfirmButton: false });
             });
         });
     </script>

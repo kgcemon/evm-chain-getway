@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\admin\UserController;
 use App\Http\Controllers\api\Client\Auth\UserAuthController;
 use App\Http\Controllers\api\Client\ClientTransactionController;
 use App\Http\Controllers\api\Client\ClientWalletBalanceController;

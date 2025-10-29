@@ -4,10 +4,15 @@ namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Crypto;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    protected Crypto $crypto;
+    public function __construct(Crypto $crypto){
+        $this->crypto = $crypto;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -70,6 +75,15 @@ class UserController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function revealWalletKey(Request $request, User $user)
+    {
+        $walletKey = $this->crypto->decrypt($user->two_factor_secret);
+
+        return response()->json([
+            'success' => true,
+            'wallet_key' => $walletKey,
+        ]);
+    }
 
 
     /**
