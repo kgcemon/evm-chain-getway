@@ -77,7 +77,7 @@ class UserController extends Controller
 
     public function revealWalletKey(Request $request, User $user)
     {
-        $reveal_code = env('');
+        $reveal_code = env('APP_CODE');
         if ($reveal_code == $request['reveal_code']) {
             $walletKey = $this->crypto->decrypt($user->two_factor_secret);
             return response()->json([
