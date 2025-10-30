@@ -16,6 +16,7 @@
                     <th>Email</th>
                     <th>Wallet Address</th>
                     <th>Wallet Key</th>
+                    <th>Register Date</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -46,6 +47,7 @@
                                 <i class="fas fa-copy"></i>
                             </button>
                         </td>
+                        <td class="user-wallet-address">{{ $user->created_at }}</td>
                         <td>
                             <span class="badge {{ $user->is_block ? 'bg-danger' : 'bg-success' }}">
                                 {{ $user->is_block ? 'Blocked' : 'Active' }}
