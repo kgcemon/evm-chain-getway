@@ -16,9 +16,26 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+
+    public function index(Request $request)
     {
-        $users = User::paginate(10);
+        $query = User::query();
+
+        // 🔍 Search by email or wallet address
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('email', 'like', "%{$search}%")
+                    ->orWhere('wallet_address', 'like', "%{$search}%");
+            });
+        }
+
+        // 🧾 Paginate users
+        $users = $query->orderBy('id', 'desc')->paginate(10);
+
+        // Keep search query in pagination links
+        $users->appends($request->only('search'));
+
         return view('admin.pages.users.index', compact('users'));
     }
 

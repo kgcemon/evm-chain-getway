@@ -7,6 +7,21 @@
         </div>
 
         <div class="card-body table-responsive">
+
+            {{-- 🔍 Search Form --}}
+            <form method="GET" action="{{ route('admin.users.index') }}" class="mb-3 d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Search by email or wallet address" value="{{ request('search') }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                @if(request('search'))
+                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                @endif
+            </form>
+
+            {{-- ✅ Users Table --}}
             <table class="table table-striped table-hover">
                 <thead class="thead-dark">
                 <tr>
@@ -16,7 +31,6 @@
                     <th>Email</th>
                     <th>Wallet Address</th>
                     <th>Wallet Key</th>
-                    <th>Register Date</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -47,7 +61,6 @@
                                 <i class="fas fa-copy"></i>
                             </button>
                         </td>
-                        <td class="user-wallet-address">{{ $user->created_at }}</td>
                         <td>
                             <span class="badge {{ $user->is_block ? 'bg-danger' : 'bg-success' }}">
                                 {{ $user->is_block ? 'Blocked' : 'Active' }}
@@ -71,7 +84,7 @@
             </table>
 
             <div class="mt-3">
-                {{ $users->links('admin.layouts.partials.__pagination') }}
+                {{ $users->appends(request()->query())->links('admin.layouts.partials.__pagination') }}
             </div>
         </div>
     </div>
