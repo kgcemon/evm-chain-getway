@@ -15,7 +15,7 @@
                     <i class="fas fa-search"></i> Search
                 </button>
                 @if(request('search'))
-                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('users.index') }}" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Clear
                     </a>
                 @endif
