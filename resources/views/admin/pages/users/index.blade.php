@@ -9,7 +9,7 @@
         <div class="card-body table-responsive">
 
             {{-- 🔍 Search Form --}}
-            <form method="GET" action="{{ route('admin.users.index') }}" class="mb-3 d-flex gap-2">
+            <form method="GET" action="{{ route('users.index') }}" class="mb-3 d-flex gap-2">
                 <input type="text" name="search" class="form-control" placeholder="Search by email or wallet address" value="{{ request('search') }}">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-search"></i> Search
