@@ -74,6 +74,14 @@
                 </li>
 
 
+                <li class="nav-item {{ request()->is('admin/payment-jobs') ? 'active' : '' }}">
+                    <a href="/admin/payment-jobs">
+                        <i class="fas fa-file-invoice"></i>
+                        <p>Invoice</p>
+                    </a>
+                </li>
+
+
 
 
                 <!-- Cron -->

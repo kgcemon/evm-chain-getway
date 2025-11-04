@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\PackageController;
+use App\Http\Controllers\Admin\PaymentJobController;
 use App\Http\Controllers\admin\ProfileController;
 use App\Http\Controllers\admin\TransactionController;
 use App\Http\Controllers\admin\UserController;
@@ -31,6 +32,8 @@ Route::middleware('auth')->prefix('admin')->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index'])->name('admin.transactions.index');
     Route::put('/transactions/{id}', [TransactionController::class, 'update'])->name('admin.transactions.update');
 
+    Route::get('/payment-jobs', [PaymentJobController::class, 'index'])->name('payment_jobs.index');
+    Route::put('/payment-jobs/{id}', [PaymentJobController::class, 'update'])->name('payment_jobs.update');
 });
 
 require __DIR__.'/auth.php';
