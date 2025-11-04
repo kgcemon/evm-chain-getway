@@ -30,7 +30,7 @@
                     @foreach($tokens as $token)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
-                            <td><img src="{{ $token->icon_url }}" alt="icon" width="32" height="32" class="rounded"></td>
+                            <td><img src="{{ $token->icon }}" alt="icon" width="32" height="32" class="rounded"></td>
                             <td>{{ $token->token_name }}</td>
                             <td>{{ $token->symbol }}</td>
                             <td>{{ Str::limit($token->contract_address, 15) }}</td>
