@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\PackageController;
-use App\Http\Controllers\Admin\PaymentJobController;
+use App\Http\Controllers\admin\PaymentJobController;
 use App\Http\Controllers\admin\ProfileController;
 use App\Http\Controllers\admin\TransactionController;
 use App\Http\Controllers\admin\UserController;
