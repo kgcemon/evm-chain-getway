@@ -4,6 +4,7 @@ use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\PackageController;
 use App\Http\Controllers\admin\PaymentJobController;
 use App\Http\Controllers\admin\ProfileController;
+use App\Http\Controllers\admin\TokenListController;
 use App\Http\Controllers\admin\TransactionController;
 use App\Http\Controllers\admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,8 @@ Route::middleware('auth')->prefix('admin')->group(function () {
 
     Route::get('/payment-jobs', [PaymentJobController::class, 'index'])->name('payment_jobs.index');
     Route::put('/payment-jobs/{id}', [PaymentJobController::class, 'update'])->name('payment_jobs.update');
+
+    Route::resource('token', TokenListController::class)->except(['show', 'create', 'edit']);
 });
 
 require __DIR__.'/auth.php';

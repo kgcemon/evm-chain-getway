@@ -102,7 +102,7 @@
                     </a>
                     <div class="collapse" id="settings">
                         <ul class="nav nav-collapse">
-                            <li><a href="/holidays"><span class="sub-item {{ Str::contains(request()->path(), 'holidays') ? 'active' : '' }}">Holidays Setting</span></a></li>
+                            <li><a href="token"><span class="sub-item {{ Str::contains(request()->path(), 'token') ? 'active' : '' }}">Token Setting</span></a></li>
                             <li><a href="/withdraws/settings"><span class="sub-item">Withdraws Settings</span></a></li>
                             <li><a href="/ReferralsSettings"><span class="sub-item">Referral Settings</span></a></li>
                         </ul>
